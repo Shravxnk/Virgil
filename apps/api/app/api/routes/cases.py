@@ -15,13 +15,13 @@ async def list_cases(
     offset: int = Query(0, ge=0),
 ):
     """List all cases with optional status filtering."""
-    return get_all_cases(status=status, limit=limit, offset=offset)
+    return await get_all_cases(status=status, limit=limit, offset=offset)
 
 
 @router.get("/{case_id}", response_model=CaseDetailResponse)
 async def get_case(case_id: str):
     """Get detailed case information including evidence, timeline, and similar cases."""
-    case = get_case_detail(case_id)
+    case = await get_case_detail(case_id)
     if case is None:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
 

@@ -5,12 +5,21 @@ import os
 
 class Settings(BaseSettings):
     app_name: str = "Chakravyuh API"
-    app_version: str = "1.0.0"
+    app_version: str = "1.1.0"
     debug: bool = False
 
+    # OpenAI
     openai_api_key: str = ""
-    openai_model: str = "gpt-4o"
+    openai_model: str = "gpt-4o-mini"
 
+    # PostgreSQL
+    db_host: str = "localhost"
+    db_port: int = 5432
+    db_name: str = "postgres"
+    db_user: str = "postgres"
+    db_password: str = ""
+
+    # Server
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     frontend_url: str = "http://localhost:3000"

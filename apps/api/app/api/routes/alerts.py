@@ -16,13 +16,13 @@ async def list_alerts(
     offset: int = Query(0, ge=0),
 ):
     """List all alerts with optional filtering."""
-    return get_all_alerts(severity=severity, status=status, limit=limit, offset=offset)
+    return await get_all_alerts(severity=severity, status=status, limit=limit, offset=offset)
 
 
 @router.get("/{alert_id}", response_model=AlertResponse)
 async def get_alert(alert_id: str):
     """Get a specific alert by ID."""
-    alert = get_alert_by_id(alert_id)
+    alert = await get_alert_by_id(alert_id)
     if alert is None:
         raise HTTPException(status_code=404, detail=f"Alert {alert_id} not found")
     return alert
@@ -31,7 +31,7 @@ async def get_alert(alert_id: str):
 @router.get("/{alert_id}/explain")
 async def explain_alert(alert_id: str):
     """Get an LLM-generated explanation for an alert."""
-    alert = get_alert_by_id(alert_id)
+    alert = await get_alert_by_id(alert_id)
     if alert is None:
         raise HTTPException(status_code=404, detail=f"Alert {alert_id} not found")
 

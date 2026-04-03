@@ -16,7 +16,15 @@ from app.api.routes import risk, alerts, cases, graph, reports, dashboard, feedb
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: seed vector collections with bundled documents."""
+    """Startup: initialise MongoDB connection and seed vector collections."""
+    settings = get_settings()
+    # PostgreSQL
+    try:
+        from app.db.connection import init_db
+        await init_db(settings.db_host, settings.db_port, settings.db_name, settings.db_user, settings.db_password)
+    except Exception as e:
+        print(f"[Chakravyuh] PostgreSQL init skipped: {e}")
+    # Vector store (ChromaDB — optional)
     try:
         from app.retrieval.vector_store import seed_all_collections
         seed_all_collections()

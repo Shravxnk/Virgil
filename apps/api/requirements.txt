@@ -7,6 +7,7 @@ networkx==3.2.1
 # chromadb==0.4.22  # Optional: requires C++ build tools on Windows
 # Install with: pip install chromadb (needs Visual C++ 14.0+)
 # The app works without it - vector search falls back gracefully
+asyncpg==0.29.0
 reportlab==4.1.0
 python-multipart==0.0.9
 httpx==0.27.0
