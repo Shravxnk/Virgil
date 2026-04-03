@@ -353,3 +353,116 @@ Reference RBI guidelines, PMLA 2002, or FIU-IND directives if relevant."""
         return result
 
     return f"Based on the {collection} knowledge base: please review the relevant documentation for guidance on '{query}'."
+
+
+MANUAL_REVIEW_SUGGEST_SYSTEM = """You are an AI decision-support assistant for a bank fraud analyst in India.
+A transaction has been flagged for MANUAL REVIEW — meaning the automated system is uncertain. Your job is to:
+
+1. **Analyse all available signals** — amount anomaly ratio, device trust, time anomaly, beneficiary risk, network graph signals
+2. **Give a clear AI suggestion**: APPROVE or REJECT — choose one, do not be vague
+3. **Explain your reasoning in 4-6 sentences** — justify why you lean approve or reject based on the specific signal values
+4. **State your confidence**: High / Medium / Low
+5. **Give one specific action** the analyst should take to verify before finalising
+
+Rules:
+- REJECT suggestion if: score ≥ 70, device_mismatch = true AND amount_anomaly > 5x, OR beneficiary has prior_investigation flag
+- APPROVE suggestion if: score < 65, single minor signal, no network risk, no device mismatch
+- Always reference specific ₹ amounts and account IDs
+- Use plain, professional English — avoid jargon overload"""
+
+
+def generate_manual_review_suggestion(pre_txn: dict) -> dict:
+    """Generate AI approve/reject suggestion with confidence for a manual_review transaction."""
+    signals = pre_txn.get("risk_signals", {})
+    score = pre_txn.get("risk_score", 0)
+
+    prompt = f"""MANUAL REVIEW DECISION REQUEST
+
+Transaction ID: {pre_txn.get('id', 'N/A')}
+From Account: {pre_txn.get('from_account', 'N/A')}
+To Account: {pre_txn.get('to_account', 'N/A')}
+Amount: ₹{pre_txn.get('amount', 0):,.0f} {pre_txn.get('currency', 'INR')}
+Type: {pre_txn.get('txn_type', 'N/A')}
+Channel: {pre_txn.get('channel', 'N/A')}
+Device Known: {pre_txn.get('device_known', False)}
+Submitted: {pre_txn.get('created_at', 'N/A')}
+
+RISK SCORE: {score}/100
+THRESHOLDS: approve=0-29 | mfa=30-59 | manual_review=60-79 | block=80+
+
+SIGNAL BREAKDOWN:
+  Amount Anomaly: {signals.get('amount_anomaly', 'N/A')} (ratio vs account baseline)
+  Time Anomaly: {signals.get('time_anomaly', 'N/A')} (0=normal hours, 1=max deviation)
+  Device Mismatch: {signals.get('device_mismatch', False)}
+  Beneficiary Risk: {signals.get('beneficiary_risk', 'N/A')} (0-1 scale)
+  Graph/Network Risk: {signals.get('graph_risk', 'N/A')} (0-1 scale)
+
+Based on these signals, provide:
+1. Your suggestion: APPROVE or REJECT
+2. Confidence: High / Medium / Low
+3. A 4-6 sentence reasoning paragraph
+4. One specific verification action for the analyst
+
+Format your response exactly as:
+SUGGESTION: [APPROVE or REJECT]
+CONFIDENCE: [High / Medium / Low]
+REASONING: [your paragraph]
+ACTION: [one specific action]"""
+
+    result = chat_completion(MANUAL_REVIEW_SUGGEST_SYSTEM, prompt, max_tokens=600)
+
+    # Parse structured response
+    suggestion = "REJECT"
+    confidence = "Medium"
+    reasoning = ""
+    action = "Verify with account holder via registered mobile number before processing."
+
+    if result:
+        lines = result.strip().split("\n")
+        for line in lines:
+            if line.startswith("SUGGESTION:"):
+                val = line.replace("SUGGESTION:", "").strip().upper()
+                suggestion = "APPROVE" if "APPROVE" in val else "REJECT"
+            elif line.startswith("CONFIDENCE:"):
+                val = line.replace("CONFIDENCE:", "").strip()
+                if "high" in val.lower():
+                    confidence = "High"
+                elif "low" in val.lower():
+                    confidence = "Low"
+                else:
+                    confidence = "Medium"
+            elif line.startswith("REASONING:"):
+                reasoning = line.replace("REASONING:", "").strip()
+            elif line.startswith("ACTION:"):
+                action = line.replace("ACTION:", "").strip()
+        if not reasoning:
+            reasoning = result  # fallback: use full response as reasoning
+
+    # Rule-based fallback if no AI available
+    if not result:
+        if score >= 70 or signals.get("device_mismatch") and signals.get("amount_anomaly", 0) > 5:
+            suggestion = "REJECT"
+            confidence = "High"
+            reasoning = (
+                f"This transaction scored {score}/100 with a device mismatch and "
+                f"{signals.get('amount_anomaly', 0):.1f}x amount deviation. "
+                f"Multiple high-risk signals present simultaneously indicate a likely fraud attempt. "
+                f"Recommending rejection pending account holder verification."
+            )
+        else:
+            suggestion = "APPROVE"
+            confidence = "Medium"
+            reasoning = (
+                f"This transaction scored {score}/100 — borderline manual review territory. "
+                f"Signal pattern shows limited risk: amount deviation of {signals.get('amount_anomaly', 0):.1f}x. "
+                f"No strong network or device signals. Likely a legitimate but unusual transaction. "
+                f"Recommend approval after a quick call to the account holder."
+            )
+
+    return {
+        "suggestion": suggestion,
+        "confidence": confidence,
+        "reasoning": reasoning,
+        "action": action,
+        "score": score,
+    }

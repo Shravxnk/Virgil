@@ -106,4 +106,17 @@ export const api = {
     const qs = searchParams.toString();
     return fetchAPI(`/api/transactions${qs ? `?${qs}` : ''}`);
   },
+
+  // Manual Review Queue
+  getManualReviewQueue: (limit?: number) =>
+    fetchAPI(`/api/transactions/manual-review${limit ? `?limit=${limit}` : ''}`),
+
+  getManualReviewItem: (id: string) =>
+    fetchAPI(`/api/transactions/manual-review/${encodeURIComponent(id)}`),
+
+  decideManualReview: (id: string, decision: 'approved' | 'rejected', note?: string) =>
+    fetchAPI(`/api/transactions/manual-review/${encodeURIComponent(id)}/decide`, {
+      method: 'POST',
+      body: JSON.stringify({ decision, note: note ?? '' }),
+    }),
 };

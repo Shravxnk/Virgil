@@ -121,13 +121,13 @@ export function FraudTrendChart({ data }: FraudTrendChartProps) {
   }));
 
   return (
-    <ChartCard title="Fraud Trend ($K)">
+    <ChartCard title="Fraud Trend (₹K)">
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={formatted}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
           <XAxis dataKey="month" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} />
           <YAxis tick={{ fontSize: 11 }} />
-          <Tooltip formatter={(value: number) => `$${value.toFixed(0)}K`} />
+          <Tooltip formatter={(value: number) => `₹${value.toFixed(0)}K`} />
           <Legend />
           <Line
             type="monotone"
@@ -187,13 +187,13 @@ interface RiskCategoriesChartProps {
 export function RiskCategoriesChart({ data }: RiskCategoriesChartProps) {
   const formatted = data.map((d) => ({ ...d, amount: d.amount / 1000 }));
   return (
-    <ChartCard title="Top Risk Categories ($K)">
+    <ChartCard title="Top Risk Categories (₹K)">
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={formatted} layout="vertical">
           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
           <XAxis type="number" tick={{ fontSize: 11 }} />
           <YAxis type="category" dataKey="category" tick={{ fontSize: 10 }} width={120} />
-          <Tooltip formatter={(value: number) => `$${value.toFixed(0)}K`} />
+          <Tooltip formatter={(value: number) => `₹${value.toFixed(0)}K`} />
           <Bar dataKey="amount" fill="#3b82f6" radius={[0, 4, 4, 0]} />
         </BarChart>
       </ResponsiveContainer>

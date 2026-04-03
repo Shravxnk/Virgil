@@ -13,6 +13,7 @@ import {
   Network,
   FileText,
   Zap,
+  ClipboardList,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,6 +25,7 @@ const analystLinks = [
   { href: '/analyst/alerts', label: 'Alert Inbox', icon: AlertTriangle, exact: false },
   { href: '/analyst/cases', label: 'Cases', icon: FileSearch, exact: false },
   { href: '/analyst/transactions', label: 'Live Scorer', icon: Zap, exact: false },
+  { href: '/analyst/manual-review', label: 'Manual Review', icon: ClipboardList, exact: false },
 ];
 
 const executiveLinks = [

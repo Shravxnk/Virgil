@@ -145,7 +145,46 @@ async def get_pre_txn(pre_id: str) -> Optional[dict]:
         row = await conn.fetchrow(
             "SELECT * FROM pre_txn_queue WHERE id = $1", pre_id
         )
-    return dict(row) if row else None
+    return _pre_txn_row_to_dict(row) if row else None
+
+
+async def get_manual_review_queue(limit: int = 50) -> list[dict]:
+    """Return all pre-transactions that were scored as manual_review and not yet resolved."""
+    if not connection.PG_AVAILABLE:
+        return []
+    pool = connection.get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """SELECT * FROM pre_txn_queue
+               WHERE decision = 'manual_review'
+               AND completed = FALSE
+               ORDER BY created_at DESC
+               LIMIT $1""",
+            limit,
+        )
+    return [_pre_txn_row_to_dict(r) for r in rows]
+
+
+async def resolve_manual_review(pre_id: str, analyst_decision: str, analyst_note: str = "") -> bool:
+    """Analyst approves or rejects a manual_review transaction.
+    analyst_decision: 'approved' | 'rejected'
+    Returns True if record was updated."""
+    if not connection.PG_AVAILABLE:
+        return False
+    pool = connection.get_pool()
+    # completed=TRUE means resolved (either way), decision updated to analyst outcome
+    async with pool.acquire() as conn:
+        result = await conn.execute(
+            """UPDATE pre_txn_queue
+               SET completed = TRUE,
+                   decision = $1,
+                   risk_signals = risk_signals || $2::jsonb
+               WHERE id = $3 AND decision = 'manual_review' AND completed = FALSE""",
+            analyst_decision,
+            json.dumps({"analyst_note": analyst_note, "resolved_at": datetime.now(timezone.utc).isoformat()}),
+            pre_id,
+        )
+    return result == "UPDATE 1"
 
 
 # ---------------------------------------------------------------------------
@@ -161,6 +200,20 @@ def _txn_row_to_dict(row) -> dict:
             pass
     # Normalise timestamp to ISO string
     for key in ("ts", "created_at", "scored_at"):
+        if key in d and d[key] is not None and hasattr(d[key], "isoformat"):
+            d[key] = d[key].isoformat()
+    return d
+
+
+def _pre_txn_row_to_dict(row) -> dict:
+    d = dict(row)
+    if d.get("risk_signals"):
+        try:
+            if isinstance(d["risk_signals"], str):
+                d["risk_signals"] = json.loads(d["risk_signals"])
+        except Exception:
+            pass
+    for key in ("created_at", "scored_at"):
         if key in d and d[key] is not None and hasattr(d[key], "isoformat"):
             d[key] = d[key].isoformat()
     return d

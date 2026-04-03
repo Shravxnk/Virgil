@@ -9,12 +9,14 @@ from app.db.repositories.transaction_repo import (
     submit_pre_txn,
     score_pre_txn,
     get_pre_txn,
+    get_manual_review_queue,
+    resolve_manual_review,
     find_transactions,
     count_transactions,
 )
 from app.db import connection
 from app.services.risk_scoring import score_transaction_params
-from app.llm.explainer import generate_alert_explanation
+from app.llm.explainer import generate_alert_explanation, generate_manual_review_suggestion
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
@@ -162,3 +164,81 @@ async def list_transactions(
     txns = await find_transactions(flagged=flagged, limit=limit, skip=offset)
     total = await count_transactions(flagged=flagged)
     return {"transactions": txns, "total": total}
+
+
+# ---------------------------------------------------------------------------
+# Manual Review Queue
+# ---------------------------------------------------------------------------
+
+@router.get("/manual-review")
+async def get_manual_review_list(limit: int = Query(50, le=200)):
+    """Return all transactions pending manual analyst review (decision=manual_review, not resolved)."""
+    items = await get_manual_review_queue(limit=limit)
+    # Enrich each item with AI suggestion
+    enriched = []
+    for item in items:
+        suggestion = generate_manual_review_suggestion(item)
+        enriched.append({**item, "ai_suggestion": suggestion})
+    return {"manual_review": enriched, "total": len(enriched)}
+
+
+@router.get("/manual-review/{pre_id}")
+async def get_manual_review_item(pre_id: str):
+    """Get a single manual-review transaction with full AI analysis."""
+    item = await get_pre_txn(pre_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    if item.get("decision") not in ("manual_review",) and item.get("completed"):
+        raise HTTPException(status_code=400, detail="Transaction already resolved")
+
+    # Full AI explanation
+    alert_data = {
+        "id": item["id"],
+        "alert_type": "manual_review",
+        "title": f"Manual Review — {item['from_account']} → {item['to_account']} ₹{item['amount']:,}",
+        "account_name": item["from_account"],
+        "account_id": item["from_account"],
+        "amount": item["amount"],
+        "currency": item.get("currency", "INR"),
+        "risk_score": item.get("risk_score", 0),
+        "severity": "high",
+        "description": f"{item['txn_type']} via {item['channel']}",
+        "timestamp": item.get("created_at", ""),
+        "decision": "manual_review",
+        "reason_codes": [],
+        "amount_anomaly": item.get("risk_signals", {}).get("amount_anomaly", 0),
+        "behavioral_mismatch": item.get("risk_signals", {}).get("amount_anomaly", 0),
+        "device_mismatch": item.get("risk_signals", {}).get("device_mismatch", False),
+        "time_anomaly": item.get("risk_signals", {}).get("time_anomaly", 0),
+        "beneficiary_risk": item.get("risk_signals", {}).get("beneficiary_risk", 0),
+        "graph_risk": item.get("risk_signals", {}).get("graph_risk", 0),
+    }
+    explanation = generate_alert_explanation(alert_data)
+    suggestion = generate_manual_review_suggestion(item)
+
+    return {**item, "explanation": explanation, "ai_suggestion": suggestion}
+
+
+class ReviewDecisionRequest(BaseModel):
+    decision: str   # "approved" or "rejected"
+    note: str = ""
+
+
+@router.post("/manual-review/{pre_id}/decide")
+async def decide_manual_review(pre_id: str, body: ReviewDecisionRequest):
+    """Analyst approves or rejects a manual-review transaction."""
+    if body.decision not in ("approved", "rejected"):
+        raise HTTPException(status_code=400, detail="decision must be 'approved' or 'rejected'")
+
+    updated = await resolve_manual_review(pre_id, body.decision, body.note)
+    if not updated:
+        raise HTTPException(
+            status_code=404,
+            detail="Transaction not found, already resolved, or not in manual_review state",
+        )
+    return {
+        "pre_txn_id": pre_id,
+        "analyst_decision": body.decision,
+        "resolved_at": datetime.now(timezone.utc).isoformat(),
+        "message": f"Transaction {pre_id} has been {body.decision} by analyst.",
+    }
