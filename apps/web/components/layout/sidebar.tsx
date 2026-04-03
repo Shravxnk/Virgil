@@ -14,6 +14,7 @@ import {
   FileText,
   Zap,
   ClipboardList,
+  TrendingUp,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,6 +27,7 @@ const analystLinks = [
   { href: '/analyst/cases', label: 'Cases', icon: FileSearch, exact: false },
   { href: '/analyst/transactions', label: 'Live Scorer', icon: Zap, exact: false },
   { href: '/analyst/manual-review', label: 'Manual Review', icon: ClipboardList, exact: false },
+  { href: '/analyst/pre-txn-analytics', label: 'Pre-Txn Analytics', icon: TrendingUp, exact: false },
 ];
 
 const executiveLinks = [
