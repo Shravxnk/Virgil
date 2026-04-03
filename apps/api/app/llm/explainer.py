@@ -12,7 +12,6 @@ Falls back to template-based responses when the API key is not configured.
 
 from app.llm.openai_client import chat_completion
 
-
 ALERT_EXPLANATION_SYSTEM = """You are a Senior Fraud Analyst at an Indian bank's Financial Intelligence Unit (FIU-IND).
 You are reviewing a fraud alert and must write a thorough, analyst-facing investigation briefing.
 
@@ -52,7 +51,7 @@ Your briefing must cover:
 
 Use ₹ for currency. Keep it to 5-7 sentences. Executive tone — no jargon, no bullet lists, flowing prose."""
 
-REPORT_NARRATIVE_SYSTEM = """You are a financial crime reporting specialist at an Indian bank, filing a Suspicious Transaction Report (STR) 
+REPORT_NARRATIVE_SYSTEM = """You are a financial crime reporting specialist at an Indian bank, filing a Suspicious Transaction Report (STR)
 with the Financial Intelligence Unit of India (FIU-IND) under the Prevention of Money Laundering Act (PMLA), 2002.
 
 Write a formal, legally defensible STR narrative with the following sections:
@@ -101,7 +100,6 @@ def generate_alert_explanation(alert_data: dict) -> str:
     reason_codes = alert_data.get("reason_codes", [])
     reason_details = []
     for rc in reason_codes:
-        base = rc.split("_")[0] + "_" + rc.split("_")[1] if "_" in rc else rc
         desc = next(
             (v for k, v in reason_descriptions.items() if rc.startswith(k)),
             f"Triggered threshold: {rc}"
@@ -345,7 +343,7 @@ def answer_knowledge_query(query: str, context: str, collection: str) -> str:
 
 Question: {query}
 
-Answer the question using the provided context. Be specific and actionable. 
+Answer the question using the provided context. Be specific and actionable.
 Reference RBI guidelines, PMLA 2002, or FIU-IND directives if relevant."""
 
     result = chat_completion(QA_SYSTEM, prompt)

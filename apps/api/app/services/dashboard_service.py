@@ -2,21 +2,20 @@
 
 import json
 from collections import defaultdict
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.core.data_loader import load_executive_metrics
 from app.db import connection
 from app.schemas.dashboard import (
     AnalystDashboardResponse,
-    ExecutiveDashboardResponse,
     ComplianceSummary,
-    StatusCount,
+    DailyTrend,
+    ExecutiveDashboardResponse,
     FraudTrendPoint,
     RiskCategory,
     ScoreDistribution,
-    DailyTrend,
+    StatusCount,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -162,7 +161,9 @@ async def get_executive_dashboard() -> ExecutiveDashboardResponse:
         1 for c in cases if c.get("status") in {"resolved_fraud", "resolved_legitimate"}
     )
     resolved_legit = sum(1 for c in cases if c.get("status") == "resolved_legitimate")
-    false_positive_rate = (resolved_legit / resolved_total) if resolved_total else metrics.get("false_positive_rate", 0.08)
+    false_positive_rate = (
+        (resolved_legit / resolved_total) if resolved_total else metrics.get("false_positive_rate", 0.08)
+    )
 
     # Detection rate from model metrics (stable, model-driven)
     detection_rate = metrics.get("detection_rate", 0.94)

@@ -4,9 +4,9 @@ import json
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from app.db import connection
-from app.core.data_loader import load_transactions
 
+from app.core.data_loader import load_transactions
+from app.db import connection
 
 # ---------------------------------------------------------------------------
 # Completed transactions

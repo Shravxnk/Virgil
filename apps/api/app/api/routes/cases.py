@@ -1,9 +1,10 @@
 """Case routes."""
 
-from fastapi import APIRouter, Query, HTTPException
-from app.services.case_service import get_all_cases, get_case_detail
-from app.schemas.case import CaseDetailResponse, CaseListResponse
+from fastapi import APIRouter, HTTPException, Query
+
 from app.llm.explainer import generate_case_summary
+from app.schemas.case import CaseDetailResponse, CaseListResponse
+from app.services.case_service import get_all_cases, get_case_detail
 
 router = APIRouter(prefix="/cases", tags=["Cases"])
 

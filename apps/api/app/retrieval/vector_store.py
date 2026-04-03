@@ -8,18 +8,16 @@ Maintains separate collections for:
 5. behavioral_context - Behavioral analysis baselines and anomalies
 """
 
-import os
 import hashlib
 from typing import Optional
 
 try:
     import chromadb
-    from chromadb.config import Settings as ChromaSettings
+    from chromadb.config import Settings as ChromaSettings  # noqa: F401
     CHROMA_AVAILABLE = True
 except ImportError:
     CHROMA_AVAILABLE = False
 
-from app.config import get_settings
 
 _client = None
 _collections: dict = {}
@@ -70,7 +68,7 @@ def _chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str
             chunks.append("\n".join(current))
             keep = max(1, len(current) - 2)
             current = current[keep:]
-            current_len = sum(len(l) + 1 for l in current)
+            current_len = sum(len(line) + 1 for line in current)
 
     if current:
         chunks.append("\n".join(current))
@@ -129,7 +127,7 @@ def search_collection(
 
 def seed_all_collections():
     """Seed all collections with bundled sample data."""
-    from app.core.data_loader import load_fraud_kb, load_policy_playbook, load_reporting_templates, load_cases
+    from app.core.data_loader import load_cases, load_fraud_kb, load_policy_playbook, load_reporting_templates
 
     seed_collection("fraud_knowledge", [load_fraud_kb()], source="fraud_knowledge_base.md")
     seed_collection("policy_playbook", [load_policy_playbook()], source="policy_playbook.md")

@@ -2,8 +2,9 @@
 
 import json
 from typing import Optional
-from app.db import connection
+
 from app.core.data_loader import load_cases
+from app.db import connection
 
 
 async def find_cases(

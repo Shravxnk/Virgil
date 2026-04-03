@@ -1,13 +1,14 @@
 """Graph analyzer: detects suspicious patterns in transaction graphs."""
 
 import networkx as nx
+
 from app.graph.builder import build_transaction_graph
-from app.schemas.graph import GraphDataResponse, GraphNode, GraphEdge, GraphCluster
+from app.schemas.graph import GraphCluster, GraphDataResponse, GraphEdge, GraphNode
 
 
 def analyze_case_graph(transaction_ids: list[str]) -> GraphDataResponse:
     """Build and analyze the transaction graph for a case."""
-    G = build_transaction_graph(transaction_ids)
+    G = build_transaction_graph(transaction_ids)  # noqa: N806
 
     nodes = []
     for node_id, data in G.nodes(data=True):
@@ -54,7 +55,7 @@ def analyze_case_graph(transaction_ids: list[str]) -> GraphDataResponse:
     )
 
 
-def detect_suspicious_paths(G: nx.DiGraph) -> list[list[str]]:
+def detect_suspicious_paths(G: nx.DiGraph) -> list[list[str]]:  # noqa: N803
     """Detect circular and suspicious fund flow paths."""
     paths = []
 
@@ -91,7 +92,7 @@ def detect_suspicious_paths(G: nx.DiGraph) -> list[list[str]]:
     return unique_paths
 
 
-def detect_clusters(G: nx.DiGraph) -> list[GraphCluster]:
+def detect_clusters(G: nx.DiGraph) -> list[GraphCluster]:  # noqa: N803
     """Detect suspicious clusters of closely connected accounts."""
     clusters = []
     undirected = G.to_undirected()

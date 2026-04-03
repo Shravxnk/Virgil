@@ -16,8 +16,6 @@ The score drives the automated decision:
 """
 
 import math
-from datetime import datetime
-from typing import Optional
 
 
 def score_amount_anomaly(amount: float, baseline_avg: float) -> tuple[float, float]:

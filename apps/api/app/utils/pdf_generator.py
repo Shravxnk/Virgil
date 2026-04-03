@@ -1,30 +1,29 @@
 """PDF report generator for FIU-style investigation reports."""
 
 import io
-import os
 import uuid
 from datetime import datetime
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import (
-    SimpleDocTemplate,
+    HRFlowable,
     Paragraph,
+    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
-    HRFlowable,
 )
 
-from app.utils import compute_custody_hash
 from app.llm.explainer import generate_report_narrative
+from app.utils import compute_custody_hash
 
 
 def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
     """Generate a professional FIU-style PDF report for a case.
-    
+
     Returns (pdf_bytes, metadata_dict).
     """
     report_id = f"RPT-{uuid.uuid4().hex[:8].upper()}"
@@ -162,7 +161,8 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
                 t.get("channel", "N/A"),
             ])
 
-        txn_table = Table(txn_table_data, colWidths=[0.8*inch, 1.0*inch, 1.0*inch, 0.9*inch, 0.8*inch, 0.8*inch, 0.7*inch])
+        col_widths = [0.8*inch, 1.0*inch, 1.0*inch, 0.9*inch, 0.8*inch, 0.8*inch, 0.7*inch]
+        txn_table = Table(txn_table_data, colWidths=col_widths)
         txn_table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a1a2e")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),

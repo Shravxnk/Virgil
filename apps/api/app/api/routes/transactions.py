@@ -1,22 +1,23 @@
 """Transaction routes — pre-transaction scoring + queue + completed transactions."""
 
-from fastapi import APIRouter, Query, HTTPException
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime, timezone
+from typing import Optional
 
-from app.db.repositories.transaction_repo import (
-    submit_pre_txn,
-    score_pre_txn,
-    get_pre_txn,
-    get_manual_review_queue,
-    resolve_manual_review,
-    find_transactions,
-    count_transactions,
-)
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
 from app.db import connection
-from app.services.risk_scoring import score_transaction_params
+from app.db.repositories.transaction_repo import (
+    count_transactions,
+    find_transactions,
+    get_manual_review_queue,
+    get_pre_txn,
+    resolve_manual_review,
+    score_pre_txn,
+    submit_pre_txn,
+)
 from app.llm.explainer import generate_alert_explanation, generate_manual_review_suggestion
+from app.services.risk_scoring import score_transaction_params
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
@@ -92,7 +93,10 @@ async def score_pre_transaction(req: PreTxnRequest):
             "currency": req.currency,
             "risk_score": result["score"],
             "severity": "critical" if result["score"] >= 80 else "high" if result["score"] >= 60 else "medium",
-            "description": f"Real-time scoring: {req.from_account} → {req.to_account} | ₹{req.amount:,.0f} | {req.txn_type}",
+            "description": (
+                f"Real-time scoring: {req.from_account} → {req.to_account}"
+                f" | ₹{req.amount:,.0f} | {req.txn_type}"
+            ),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "decision": result["decision"],
             "reason_codes": result["reason_codes"],

@@ -1,8 +1,9 @@
 """Dashboard routes."""
 
 from fastapi import APIRouter
-from app.services.dashboard_service import get_analyst_dashboard, get_executive_dashboard
+
 from app.schemas.dashboard import AnalystDashboardResponse, ExecutiveDashboardResponse
+from app.services.dashboard_service import get_analyst_dashboard, get_executive_dashboard
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 

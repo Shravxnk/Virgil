@@ -1,7 +1,7 @@
 """Demo session repository — tracks the 4 GPay mock phone sessions."""
 
 from typing import Optional
-from datetime import datetime, timezone
+
 from app.db import connection
 
 # The 4 demo sessions seeded at startup — one per GPay phone in the presentation

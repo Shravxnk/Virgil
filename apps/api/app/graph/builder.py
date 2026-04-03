@@ -1,6 +1,7 @@
 """Graph builder: constructs transaction network graphs from case data."""
 
 import networkx as nx
+
 from app.core.data_loader import load_transactions, load_user_profiles
 
 
@@ -10,7 +11,7 @@ def build_transaction_graph(transaction_ids: list[str]) -> nx.DiGraph:
     txns = [t for t in all_txns if t["id"] in transaction_ids]
     profiles = {p.get("account_id", p.get("id", "")): p for p in load_user_profiles()}
 
-    G = nx.DiGraph()
+    G = nx.DiGraph()  # noqa: N806
 
     account_ids = set()
     for txn in txns:

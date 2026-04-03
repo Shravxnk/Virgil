@@ -1,6 +1,7 @@
 """OpenAI client wrapper for the LLM-backed explanation layer."""
 
 from openai import OpenAI
+
 from app.config import get_settings
 
 _client: OpenAI | None = None

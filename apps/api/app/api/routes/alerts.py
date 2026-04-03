@@ -1,9 +1,10 @@
 """Alert routes."""
 
-from fastapi import APIRouter, Query, HTTPException
-from app.services.alert_service import get_all_alerts, get_alert_by_id
-from app.schemas.alert import AlertResponse, AlertListResponse
+from fastapi import APIRouter, HTTPException, Query
+
 from app.llm.explainer import generate_alert_explanation
+from app.schemas.alert import AlertListResponse, AlertResponse
+from app.services.alert_service import get_alert_by_id, get_all_alerts
 
 router = APIRouter(prefix="/alerts", tags=["Alerts"])
 

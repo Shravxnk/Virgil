@@ -1,9 +1,10 @@
 """Risk scoring routes."""
 
 from fastapi import APIRouter, Query
-from app.services.risk_scoring import score_transaction
-from app.schemas.risk import RiskScoreResponse
+
 from app.llm.explainer import generate_alert_explanation
+from app.schemas.risk import RiskScoreResponse
+from app.services.risk_scoring import score_transaction
 
 router = APIRouter(prefix="/risk", tags=["Risk Scoring"])
 

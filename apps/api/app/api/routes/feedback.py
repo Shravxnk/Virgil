@@ -1,7 +1,9 @@
 """Feedback and knowledge search routes."""
 
 from fastapi import APIRouter
-from app.services.feedback_service import submit_feedback
+
+from app.llm.explainer import answer_knowledge_query
+from app.retrieval.vector_store import route_query, search_collection
 from app.schemas.feedback import (
     FeedbackRequest,
     FeedbackResponse,
@@ -9,8 +11,7 @@ from app.schemas.feedback import (
     KnowledgeSearchResponse,
     KnowledgeSearchResult,
 )
-from app.retrieval.vector_store import search_collection, route_query
-from app.llm.explainer import answer_knowledge_query
+from app.services.feedback_service import submit_feedback
 
 router = APIRouter(tags=["Feedback & Knowledge"])
 

@@ -1,12 +1,13 @@
 """Report routes."""
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
 import io
 
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
+
+from app.schemas.report import ReportMetadata
 from app.services.case_service import get_case_detail
 from app.utils.pdf_generator import generate_report_pdf
-from app.schemas.report import ReportMetadata
 
 router = APIRouter(prefix="/report", tags=["Reports"])
 

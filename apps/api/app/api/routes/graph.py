@@ -1,9 +1,10 @@
 """Graph routes."""
 
 from fastapi import APIRouter, HTTPException
-from app.services.case_service import get_case_detail
+
 from app.graph.analyzer import analyze_case_graph
 from app.schemas.graph import GraphDataResponse
+from app.services.case_service import get_case_detail
 
 router = APIRouter(prefix="/graph", tags=["Graph Analysis"])
 

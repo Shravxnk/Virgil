@@ -10,8 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 # Ensure project root is in path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+from app.api.routes import alerts, cases, dashboard, feedback, graph, reports, risk, transactions
 from app.config import get_settings
-from app.api.routes import risk, alerts, cases, graph, reports, dashboard, feedback, transactions
 
 
 @asynccontextmanager

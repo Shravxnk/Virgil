@@ -2,14 +2,14 @@
 
 from datetime import datetime
 
-from app.core.scoring import compute_risk_score
 from app.core.data_loader import (
-    get_transaction_by_id,
-    get_profile_by_account,
     get_devices_for_account,
+    get_profile_by_account,
+    get_transaction_by_id,
     load_transactions,
 )
-from app.schemas.risk import RiskScoreResponse, Decision
+from app.core.scoring import compute_risk_score
+from app.schemas.risk import Decision, RiskScoreResponse
 
 
 def _parse_usual_hours(time_range: str) -> tuple[int, int]:
@@ -103,7 +103,6 @@ def score_transaction(transaction_id: str) -> RiskScoreResponse:
 
     ip_risk = "low"
     if recent_devices:
-        ip_risk_map = {"low": 0, "medium": 1, "high": 2}
         # Use lowest trust device's implied risk
         if recent_devices[0]["trust_score"] < 20:
             ip_risk = "high"

@@ -1,6 +1,6 @@
 """Case service: manages case retrieval and detail assembly."""
 
-from app.core.data_loader import load_cases, load_alerts, load_transactions
+from app.core.data_loader import load_alerts, load_cases, load_transactions
 from app.schemas.case import CaseDetailResponse, CaseListItem, CaseListResponse
 
 
@@ -11,7 +11,7 @@ async def get_all_cases(
 ) -> CaseListResponse:
     from app.db import connection
     if connection.PG_AVAILABLE:
-        from app.db.repositories.case_repo import find_cases, count_cases
+        from app.db.repositories.case_repo import count_cases, find_cases
         cases = await find_cases(status=status, limit=limit, skip=offset)
         total = await count_cases(status=status)
     else:
@@ -42,8 +42,8 @@ async def get_case_detail(case_id: str) -> CaseDetailResponse | None:
     from app.db import connection
 
     if connection.PG_AVAILABLE:
-        from app.db.repositories.case_repo import find_case_by_id
         from app.db.repositories.alert_repo import find_alert_by_id
+        from app.db.repositories.case_repo import find_case_by_id
         from app.db.repositories.transaction_repo import find_transaction_by_id
         case = await find_case_by_id(case_id)
         if not case:

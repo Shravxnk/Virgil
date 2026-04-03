@@ -1,7 +1,7 @@
 """Alert service: manages alert retrieval and filtering."""
 
 from app.core.data_loader import load_alerts
-from app.schemas.alert import AlertResponse, AlertListResponse
+from app.schemas.alert import AlertListResponse, AlertResponse
 
 
 async def get_all_alerts(
@@ -12,7 +12,7 @@ async def get_all_alerts(
 ) -> AlertListResponse:
     from app.db import connection
     if connection.PG_AVAILABLE:
-        from app.db.repositories.alert_repo import find_alerts, count_alerts
+        from app.db.repositories.alert_repo import count_alerts, find_alerts
         alerts = await find_alerts(severity=severity, status=status, limit=limit, skip=offset)
         total = await count_alerts(severity=severity, status=status)
         return AlertListResponse(alerts=[AlertResponse(**a) for a in alerts], total=total)
