@@ -1,0 +1,15 @@
+{
+  "name": "chakravyuh",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-Powered Fraud Intelligence System",
+  "scripts": {
+    "install:web": "cd apps/web && npm install",
+    "dev:web": "cd apps/web && npm run dev",
+    "build:web": "cd apps/web && npm run build",
+    "lint:web": "cd apps/web && npm run lint",
+    "dev:api": "cd apps/api && uvicorn app.main:app --reload --port 8000",
+    "test:api": "cd apps/api && pytest tests/ -v",
+    "setup": "npm run install:web"
+  }
+}

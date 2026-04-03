@@ -1,0 +1,281 @@
+[
+  {
+    "id": "CASE-001",
+    "status": "investigating",
+    "created_at": "2026-03-28T14:30:00Z",
+    "updated_at": "2026-04-01T09:00:00Z",
+    "assigned_to": "Sarah Chen",
+    "title": "Multi-hop layering scheme — Meridian Holdings network",
+    "description": "Circular fund flow detected involving 4 accounts across 3 jurisdictions. Funds originating from Meridian Holdings passed through Apex Global Trading, Pinnacle Finance, and Sterling Capital before returning. Total exposure: $245,000.",
+    "risk_score": 92,
+    "explanation": null,
+    "recommended_action": "freeze_account",
+    "alert_ids": ["ALT-001", "ALT-002"],
+    "transaction_ids": ["TXN-001", "TXN-002", "TXN-003", "TXN-004", "TXN-005", "TXN-006"],
+    "primary_account": "ACC-001",
+    "total_exposure": 245000.00,
+    "evidence": {
+      "behavioral_analysis": {
+        "baseline_avg_amount": 45000,
+        "current_amount": 245000,
+        "deviation": 4.44,
+        "usual_time_range": "09:00-17:00 EST",
+        "transaction_time": "14:23 EST",
+        "time_anomaly": false,
+        "usual_locations": ["New York", "London"],
+        "transaction_location": "Singapore"
+      },
+      "device_analysis": {
+        "known_device": true,
+        "device_id": "DEV-001",
+        "device_type": "Desktop",
+        "os": "Windows 11",
+        "ip_address": "203.0.113.42",
+        "ip_risk": "medium",
+        "geo_location": "Singapore"
+      },
+      "network_analysis": {
+        "circular_transfers": true,
+        "hop_count": 4,
+        "connected_suspicious_accounts": 3,
+        "layering_detected": true
+      }
+    },
+    "timeline": [
+      {"timestamp": "2026-03-28T14:23:00Z", "event_type": "transaction", "description": "Initial transfer of $82,000 from Meridian Holdings to Apex Global Trading", "actor": "system", "metadata": {"transaction_id": "TXN-001"}},
+      {"timestamp": "2026-03-28T14:23:05Z", "event_type": "alert_generated", "description": "Alert ALT-001 generated: Circular fund flow detected", "actor": "system", "metadata": {"alert_id": "ALT-001"}},
+      {"timestamp": "2026-03-28T16:10:00Z", "event_type": "transaction", "description": "Transfer of $80,500 from Apex Global to Pinnacle Finance Corp", "actor": "system", "metadata": {"transaction_id": "TXN-002"}},
+      {"timestamp": "2026-03-28T18:45:00Z", "event_type": "transaction", "description": "Transfer of $79,000 from Pinnacle Finance to Sterling Capital", "actor": "system", "metadata": {"transaction_id": "TXN-003"}},
+      {"timestamp": "2026-03-29T09:15:00Z", "event_type": "transaction", "description": "Transfer of $78,200 from Sterling Capital back to Meridian Holdings", "actor": "system", "metadata": {"transaction_id": "TXN-004"}},
+      {"timestamp": "2026-03-29T10:00:00Z", "event_type": "case_created", "description": "Case CASE-001 created and assigned to Sarah Chen", "actor": "system", "metadata": {}},
+      {"timestamp": "2026-03-30T11:00:00Z", "event_type": "investigation_note", "description": "Graph analysis confirms circular pattern. Requesting additional KYC on intermediary accounts.", "actor": "Sarah Chen", "metadata": {}},
+      {"timestamp": "2026-04-01T09:00:00Z", "event_type": "escalation", "description": "Case escalated to senior review — potential SAR filing recommended", "actor": "Sarah Chen", "metadata": {}}
+    ],
+    "similar_cases": [
+      {"id": "CASE-HIS-042", "title": "Layering scheme via shell companies — 2025-Q3", "similarity": 0.89, "outcome": "confirmed_fraud", "risk_score": 94},
+      {"id": "CASE-HIS-037", "title": "Multi-jurisdiction fund cycling — APAC corridor", "similarity": 0.76, "outcome": "confirmed_fraud", "risk_score": 88}
+    ],
+    "notes": [
+      {"id": "NOTE-001", "author": "Sarah Chen", "content": "Initial review complete. Fund flow clearly circular with decreasing amounts suggesting extraction at each hop. Requesting freeze on intermediary accounts.", "timestamp": "2026-03-30T11:00:00Z"},
+      {"id": "NOTE-002", "author": "James Rodriguez", "content": "Confirmed: Apex Global Trading has appeared in 2 prior investigations. Recommend escalation to SAR team.", "timestamp": "2026-03-31T14:00:00Z"}
+    ]
+  },
+  {
+    "id": "CASE-002",
+    "status": "open",
+    "created_at": "2026-03-30T03:15:00Z",
+    "updated_at": "2026-03-31T10:00:00Z",
+    "assigned_to": "Michael Torres",
+    "title": "Account takeover — Priya Sharma personal account",
+    "description": "Unauthorized transfer detected from personal savings account. New device fingerprint, off-hours activity, and atypical transfer destination.",
+    "risk_score": 78,
+    "explanation": null,
+    "recommended_action": "freeze_account",
+    "alert_ids": ["ALT-003"],
+    "transaction_ids": ["TXN-007", "TXN-008"],
+    "primary_account": "ACC-005",
+    "total_exposure": 58000.00,
+    "evidence": {
+      "behavioral_analysis": {
+        "baseline_avg_amount": 3500,
+        "current_amount": 58000,
+        "deviation": 15.57,
+        "usual_time_range": "08:00-21:00 IST",
+        "transaction_time": "03:12 IST",
+        "time_anomaly": true,
+        "usual_locations": ["Mumbai", "Pune"],
+        "transaction_location": null
+      },
+      "device_analysis": {
+        "known_device": false,
+        "device_id": "DEV-008",
+        "device_type": "Mobile",
+        "os": "Android 14",
+        "ip_address": "198.51.100.73",
+        "ip_risk": "high",
+        "geo_location": "Lagos, Nigeria"
+      },
+      "network_analysis": {
+        "circular_transfers": false,
+        "hop_count": 1,
+        "connected_suspicious_accounts": 1,
+        "layering_detected": false
+      }
+    },
+    "timeline": [
+      {"timestamp": "2026-03-30T03:12:00Z", "event_type": "transaction", "description": "Wire transfer of $58,000 to external account", "actor": "system", "metadata": {"transaction_id": "TXN-007"}},
+      {"timestamp": "2026-03-30T03:12:05Z", "event_type": "alert_generated", "description": "Alert ALT-003 generated: Account takeover suspected", "actor": "system", "metadata": {"alert_id": "ALT-003"}},
+      {"timestamp": "2026-03-30T03:15:00Z", "event_type": "case_created", "description": "Auto-generated case due to critical risk score", "actor": "system", "metadata": {}},
+      {"timestamp": "2026-03-30T08:00:00Z", "event_type": "investigation_note", "description": "Attempted to contact account holder. Left voicemail.", "actor": "Michael Torres", "metadata": {}},
+      {"timestamp": "2026-03-31T10:00:00Z", "event_type": "investigation_note", "description": "Account holder confirmed they did not authorize transaction. Account frozen pending investigation.", "actor": "Michael Torres", "metadata": {}}
+    ],
+    "similar_cases": [
+      {"id": "CASE-HIS-055", "title": "ATO via credential stuffing — high-value transfer", "similarity": 0.82, "outcome": "confirmed_fraud", "risk_score": 81}
+    ],
+    "notes": [
+      {"id": "NOTE-003", "author": "Michael Torres", "content": "Customer confirmed unauthorized access. Device traced to known fraud IP range. Initiating chargeback process.", "timestamp": "2026-03-31T10:00:00Z"}
+    ]
+  },
+  {
+    "id": "CASE-003",
+    "status": "investigating",
+    "created_at": "2026-03-29T09:35:00Z",
+    "updated_at": "2026-04-01T16:00:00Z",
+    "assigned_to": "Sarah Chen",
+    "title": "Synthetic identity — DataBridge Solutions rapid credit scheme",
+    "description": "New entity with synthetic identity markers showing rapid credit utilization and transfers to previously flagged accounts.",
+    "risk_score": 85,
+    "explanation": null,
+    "recommended_action": "escalate",
+    "alert_ids": ["ALT-004", "ALT-005"],
+    "transaction_ids": ["TXN-009", "TXN-010", "TXN-011"],
+    "primary_account": "ACC-007",
+    "total_exposure": 192000.00,
+    "evidence": {
+      "behavioral_analysis": {
+        "baseline_avg_amount": 0,
+        "current_amount": 125000,
+        "deviation": 0,
+        "usual_time_range": "N/A — new account",
+        "transaction_time": "09:30 EST",
+        "time_anomaly": false,
+        "usual_locations": [],
+        "transaction_location": "Delaware"
+      },
+      "device_analysis": {
+        "known_device": true,
+        "device_id": "DEV-010",
+        "device_type": "Desktop",
+        "os": "macOS 14",
+        "ip_address": "192.0.2.88",
+        "ip_risk": "low",
+        "geo_location": "Wilmington, DE"
+      },
+      "network_analysis": {
+        "circular_transfers": false,
+        "hop_count": 2,
+        "connected_suspicious_accounts": 2,
+        "layering_detected": false
+      }
+    },
+    "timeline": [
+      {"timestamp": "2026-02-12T00:00:00Z", "event_type": "account_opened", "description": "Account ACC-007 opened for DataBridge Solutions LLC", "actor": "system", "metadata": {}},
+      {"timestamp": "2026-03-29T09:30:00Z", "event_type": "transaction", "description": "Large outbound wire of $125,000", "actor": "system", "metadata": {"transaction_id": "TXN-009"}},
+      {"timestamp": "2026-03-29T09:30:05Z", "event_type": "alert_generated", "description": "Alert ALT-004 generated: Synthetic identity indicators", "actor": "system", "metadata": {"alert_id": "ALT-004"}},
+      {"timestamp": "2026-03-29T11:15:00Z", "event_type": "transaction", "description": "Wire transfer of $67,000 to high-risk beneficiary", "actor": "system", "metadata": {"transaction_id": "TXN-011"}},
+      {"timestamp": "2026-03-29T11:15:05Z", "event_type": "alert_generated", "description": "Alert ALT-005 generated: High-risk beneficiary transfer", "actor": "system", "metadata": {"alert_id": "ALT-005"}},
+      {"timestamp": "2026-04-01T16:00:00Z", "event_type": "investigation_note", "description": "KYC review reveals thin credit file and no verifiable business history. Escalating for enhanced due diligence.", "actor": "Sarah Chen", "metadata": {}}
+    ],
+    "similar_cases": [
+      {"id": "CASE-HIS-048", "title": "Synthetic identity bust-out — Delaware shell company", "similarity": 0.91, "outcome": "confirmed_fraud", "risk_score": 90}
+    ],
+    "notes": [
+      {"id": "NOTE-004", "author": "Sarah Chen", "content": "Entity verification returned thin file. Business address is a registered agent. Requesting enhanced due diligence from compliance.", "timestamp": "2026-04-01T16:00:00Z"}
+    ]
+  },
+  {
+    "id": "CASE-004",
+    "status": "open",
+    "created_at": "2026-03-31T16:05:00Z",
+    "updated_at": "2026-03-31T16:05:00Z",
+    "assigned_to": "Unassigned",
+    "title": "Unusual large transfer — Chen Wei International",
+    "description": "Single high-value transfer significantly exceeding account baseline. Requires review to determine if legitimate business transaction.",
+    "risk_score": 65,
+    "explanation": null,
+    "recommended_action": "manual_review",
+    "alert_ids": ["ALT-006"],
+    "transaction_ids": ["TXN-012", "TXN-013"],
+    "primary_account": "ACC-009",
+    "total_exposure": 340000.00,
+    "evidence": {
+      "behavioral_analysis": {
+        "baseline_avg_amount": 28000,
+        "current_amount": 340000,
+        "deviation": 11.14,
+        "usual_time_range": "09:00-18:00 CST",
+        "transaction_time": "16:00 CST",
+        "time_anomaly": false,
+        "usual_locations": ["Shanghai", "Hong Kong"],
+        "transaction_location": "Hong Kong"
+      },
+      "device_analysis": {
+        "known_device": true,
+        "device_id": "DEV-012",
+        "device_type": "Desktop",
+        "os": "Windows 11",
+        "ip_address": "203.0.113.99",
+        "ip_risk": "low",
+        "geo_location": "Hong Kong"
+      },
+      "network_analysis": {
+        "circular_transfers": false,
+        "hop_count": 1,
+        "connected_suspicious_accounts": 0,
+        "layering_detected": false
+      }
+    },
+    "timeline": [
+      {"timestamp": "2026-03-31T16:00:00Z", "event_type": "transaction", "description": "Wire transfer of $340,000 to Meridian Holdings", "actor": "system", "metadata": {"transaction_id": "TXN-012"}},
+      {"timestamp": "2026-03-31T16:00:05Z", "event_type": "alert_generated", "description": "Alert ALT-006 generated: Unusually large transfer", "actor": "system", "metadata": {"alert_id": "ALT-006"}},
+      {"timestamp": "2026-03-31T16:05:00Z", "event_type": "case_created", "description": "Case auto-created pending analyst assignment", "actor": "system", "metadata": {}}
+    ],
+    "similar_cases": [],
+    "notes": []
+  },
+  {
+    "id": "CASE-005",
+    "status": "open",
+    "created_at": "2026-04-01T08:05:00Z",
+    "updated_at": "2026-04-01T10:30:00Z",
+    "assigned_to": "James Rodriguez",
+    "title": "Structuring and mule network — Horizon Ventures",
+    "description": "Pattern of sub-threshold transfers to newly opened accounts, consistent with structuring and mule network operations.",
+    "risk_score": 88,
+    "explanation": null,
+    "recommended_action": "freeze_account",
+    "alert_ids": ["ALT-007", "ALT-008"],
+    "transaction_ids": ["TXN-014", "TXN-015", "TXN-016", "TXN-017", "TXN-018", "TXN-019"],
+    "primary_account": "ACC-010",
+    "total_exposure": 112800.00,
+    "evidence": {
+      "behavioral_analysis": {
+        "baseline_avg_amount": 52000,
+        "current_amount": 9400,
+        "deviation": 0.18,
+        "usual_time_range": "09:00-17:00 EST",
+        "transaction_time": "08:00-10:30 EST",
+        "time_anomaly": false,
+        "usual_locations": ["Boston"],
+        "transaction_location": "Boston"
+      },
+      "device_analysis": {
+        "known_device": true,
+        "device_id": "DEV-014",
+        "device_type": "Desktop",
+        "os": "macOS 14",
+        "ip_address": "198.51.100.22",
+        "ip_risk": "low",
+        "geo_location": "Boston, MA"
+      },
+      "network_analysis": {
+        "circular_transfers": false,
+        "hop_count": 1,
+        "connected_suspicious_accounts": 3,
+        "layering_detected": false
+      }
+    },
+    "timeline": [
+      {"timestamp": "2026-04-01T08:00:00Z", "event_type": "transaction", "description": "First of 12 sub-threshold transfers ($9,400 each)", "actor": "system", "metadata": {"transaction_id": "TXN-014"}},
+      {"timestamp": "2026-04-01T08:00:05Z", "event_type": "alert_generated", "description": "Alert ALT-007: Potential structuring detected", "actor": "system", "metadata": {"alert_id": "ALT-007"}},
+      {"timestamp": "2026-04-01T08:05:00Z", "event_type": "case_created", "description": "Case created and assigned to James Rodriguez", "actor": "system", "metadata": {}},
+      {"timestamp": "2026-04-01T10:30:00Z", "event_type": "alert_generated", "description": "Alert ALT-008: Rapid disbursement to mule accounts", "actor": "system", "metadata": {"alert_id": "ALT-008"}}
+    ],
+    "similar_cases": [
+      {"id": "CASE-HIS-061", "title": "Structuring via payroll mule accounts", "similarity": 0.85, "outcome": "confirmed_fraud", "risk_score": 91}
+    ],
+    "notes": [
+      {"id": "NOTE-005", "author": "James Rodriguez", "content": "12 transfers all just under CTR threshold. Beneficiary accounts opened within last 30 days. Classic structuring pattern.", "timestamp": "2026-04-01T11:00:00Z"}
+    ]
+  }
+]
