@@ -10,10 +10,10 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 @router.get("/analyst", response_model=AnalystDashboardResponse)
 async def analyst_dashboard():
     """Get the analyst dashboard with alerts overview, scoring distribution, and trends."""
-    return get_analyst_dashboard()
+    return await get_analyst_dashboard()
 
 
 @router.get("/executive", response_model=ExecutiveDashboardResponse)
 async def executive_dashboard():
     """Get the executive dashboard with KPIs, model health, compliance, and trends."""
-    return get_executive_dashboard()
+    return await get_executive_dashboard()

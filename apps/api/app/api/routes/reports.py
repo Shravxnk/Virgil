@@ -14,7 +14,7 @@ router = APIRouter(prefix="/report", tags=["Reports"])
 @router.get("/{case_id}/pdf")
 async def download_report_pdf(case_id: str):
     """Generate and download an FIU-style PDF report for a case."""
-    case = get_case_detail(case_id)
+    case = await get_case_detail(case_id)
     if case is None:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
 
@@ -34,7 +34,7 @@ async def download_report_pdf(case_id: str):
 @router.get("/{case_id}/metadata", response_model=ReportMetadata)
 async def get_report_metadata(case_id: str):
     """Get report metadata without generating the full PDF."""
-    case = get_case_detail(case_id)
+    case = await get_case_detail(case_id)
     if case is None:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
 

@@ -29,7 +29,7 @@ def analyze_case_graph(transaction_ids: list[str]) -> GraphDataResponse:
                 source=source,
                 target=target,
                 amount=data.get("amount", 0),
-                currency=data.get("currency", "USD"),
+                currency=data.get("currency", "INR"),
                 timestamp=data.get("timestamp", ""),
                 suspicious=data.get("suspicious", False),
             )

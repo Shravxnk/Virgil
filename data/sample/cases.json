@@ -2,98 +2,186 @@
   {
     "id": "CASE-001",
     "status": "investigating",
-    "created_at": "2026-03-28T14:30:00Z",
-    "updated_at": "2026-04-01T09:00:00Z",
-    "assigned_to": "Sarah Chen",
-    "title": "Multi-hop layering scheme — Meridian Holdings network",
-    "description": "Circular fund flow detected involving 4 accounts across 3 jurisdictions. Funds originating from Meridian Holdings passed through Apex Global Trading, Pinnacle Finance, and Sterling Capital before returning. Total exposure: $245,000.",
+    "title": "Circular fund flow — Meridian Holdings India Pvt Ltd (SBI 30765432189)",
     "risk_score": 92,
-    "explanation": null,
-    "recommended_action": "freeze_account",
-    "alert_ids": ["ALT-001", "ALT-002"],
-    "transaction_ids": ["TXN-001", "TXN-002", "TXN-003", "TXN-004", "TXN-005", "TXN-006"],
+    "assigned_to": "Ananya Krishnan",
+    "created_at": "2026-03-28T14:30:00+05:30",
+    "updated_at": "2026-04-01T10:00:00+05:30",
+    "total_exposure": 18500000,
+    "alert_count": 2,
+    "description": "Suspected layering operation: ₹1.85 Cr transferred by Meridian Holdings India Pvt Ltd (SBI, IFSC SBIN0001187) via RTGS through Aarav Traders Pvt Ltd (HDFC, IFSC HDFC0001235) and Sunrise Finance Pvt Ltd (UCO Bank, IFSC UCBA0002341), returning ₹1.79 Cr to originator within 36 hours. Net extraction: ₹5.5 L (2.97%).",
+    "explanation": "The 3-hop RTGS chain with a 2.97% extraction spread is consistent with money laundering layering under PMLA Section 3. Meridian Holdings India Pvt Ltd is the suspected primary controller. The use of RTGS (high-value, immediate settlement) with a circular return pattern is a known red flag indicator recognised by FIU-IND in its STR guidance.",
+    "recommended_action": "Freeze accounts 30765432189 (SBI), 50100421836529 (HDFC), and 0230014781923 (UCO Bank). File STR with FIU-IND via FINnet portal within 7 working days of this report. Notify MLRO immediately.",
+    "alert_ids": [
+      "ALT-001",
+      "ALT-002"
+    ],
+    "transaction_ids": [
+      "SBIN26032700001",
+      "HDFC26032700387",
+      "UCBA26032800521"
+    ],
     "primary_account": "ACC-001",
-    "total_exposure": 245000.00,
     "evidence": {
       "behavioral_analysis": {
-        "baseline_avg_amount": 45000,
-        "current_amount": 245000,
-        "deviation": 4.44,
-        "usual_time_range": "09:00-17:00 EST",
-        "transaction_time": "14:23 EST",
+        "baseline_avg_amount": 850000,
+        "current_amount": 18500000,
+        "deviation": 21.76,
+        "usual_time_range": "09:00-18:00 IST",
+        "transaction_time": "09:10 IST",
         "time_anomaly": false,
-        "usual_locations": ["New York", "London"],
-        "transaction_location": "Singapore"
+        "usual_locations": [
+          "Mumbai"
+        ],
+        "transaction_location": "Mumbai"
       },
       "device_analysis": {
         "known_device": true,
-        "device_id": "DEV-001",
+        "device_id": "DEV-0021",
         "device_type": "Desktop",
-        "os": "Windows 11",
-        "ip_address": "203.0.113.42",
-        "ip_risk": "medium",
-        "geo_location": "Singapore"
+        "os": "Windows 11 Pro",
+        "ip_address": "122.160.87.43",
+        "ip_risk": "low",
+        "geo_location": "Mumbai, Maharashtra"
       },
       "network_analysis": {
         "circular_transfers": true,
-        "hop_count": 4,
-        "connected_suspicious_accounts": 3,
+        "hop_count": 3,
+        "connected_suspicious_accounts": 2,
         "layering_detected": true
       }
     },
+    "alerts": [],
+    "transactions": [],
     "timeline": [
-      {"timestamp": "2026-03-28T14:23:00Z", "event_type": "transaction", "description": "Initial transfer of $82,000 from Meridian Holdings to Apex Global Trading", "actor": "system", "metadata": {"transaction_id": "TXN-001"}},
-      {"timestamp": "2026-03-28T14:23:05Z", "event_type": "alert_generated", "description": "Alert ALT-001 generated: Circular fund flow detected", "actor": "system", "metadata": {"alert_id": "ALT-001"}},
-      {"timestamp": "2026-03-28T16:10:00Z", "event_type": "transaction", "description": "Transfer of $80,500 from Apex Global to Pinnacle Finance Corp", "actor": "system", "metadata": {"transaction_id": "TXN-002"}},
-      {"timestamp": "2026-03-28T18:45:00Z", "event_type": "transaction", "description": "Transfer of $79,000 from Pinnacle Finance to Sterling Capital", "actor": "system", "metadata": {"transaction_id": "TXN-003"}},
-      {"timestamp": "2026-03-29T09:15:00Z", "event_type": "transaction", "description": "Transfer of $78,200 from Sterling Capital back to Meridian Holdings", "actor": "system", "metadata": {"transaction_id": "TXN-004"}},
-      {"timestamp": "2026-03-29T10:00:00Z", "event_type": "case_created", "description": "Case CASE-001 created and assigned to Sarah Chen", "actor": "system", "metadata": {}},
-      {"timestamp": "2026-03-30T11:00:00Z", "event_type": "investigation_note", "description": "Graph analysis confirms circular pattern. Requesting additional KYC on intermediary accounts.", "actor": "Sarah Chen", "metadata": {}},
-      {"timestamp": "2026-04-01T09:00:00Z", "event_type": "escalation", "description": "Case escalated to senior review — potential SAR filing recommended", "actor": "Sarah Chen", "metadata": {}}
+      {
+        "timestamp": "2026-03-27T09:10:00+05:30",
+        "event_type": "transaction",
+        "description": "₹1.85 Cr RTGS from Meridian Holdings (SBI 30765432189) to Aarav Traders (HDFC 50100421836529) — UTR: SBIN26032700001",
+        "actor": "System",
+        "metadata": {
+          "utr": "SBIN26032700001"
+        }
+      },
+      {
+        "timestamp": "2026-03-27T14:23:00+05:30",
+        "event_type": "transaction",
+        "description": "₹1.82 Cr RTGS from Aarav Traders (HDFC 50100421836529) to Sunrise Finance (UCO 0230014781923) — UTR: HDFC26032700387",
+        "actor": "System",
+        "metadata": {
+          "utr": "HDFC26032700387"
+        }
+      },
+      {
+        "timestamp": "2026-03-28T14:23:00+05:30",
+        "event_type": "alert_raised",
+        "description": "Critical alert ALT-001 raised — circular transfer pattern detected by graph engine",
+        "actor": "System",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-03-28T14:30:00+05:30",
+        "event_type": "case_opened",
+        "description": "Case opened and assigned to Ananya Krishnan",
+        "actor": "System",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-03-28T18:45:00+05:30",
+        "event_type": "transaction",
+        "description": "₹1.79 Cr RTGS return from Sunrise Finance (UCO 0230014781923) to Meridian Holdings (SBI 30765432189) — UTR: UCBA26032800521",
+        "actor": "System",
+        "metadata": {
+          "utr": "UCBA26032800521"
+        }
+      },
+      {
+        "timestamp": "2026-03-29T09:30:00+05:30",
+        "event_type": "analyst_note",
+        "description": "3-hop circular confirmed. Extraction spread ₹5.5 L (2.97%). All three accounts flagged for freeze.",
+        "actor": "Ananya Krishnan",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-04-01T10:00:00+05:30",
+        "event_type": "escalated",
+        "description": "Escalated to MLRO for STR review. Legal hold placed on Meridian Holdings account.",
+        "actor": "Ananya Krishnan",
+        "metadata": {}
+      }
     ],
     "similar_cases": [
-      {"id": "CASE-HIS-042", "title": "Layering scheme via shell companies — 2025-Q3", "similarity": 0.89, "outcome": "confirmed_fraud", "risk_score": 94},
-      {"id": "CASE-HIS-037", "title": "Multi-jurisdiction fund cycling — APAC corridor", "similarity": 0.76, "outcome": "confirmed_fraud", "risk_score": 88}
+      {
+        "id": "CASE-006",
+        "title": "Circular NEFT — Prakash Commodities Pvt Ltd (2025-Q3)",
+        "similarity": 0.88,
+        "outcome": "STR Filed",
+        "risk_score": 87
+      },
+      {
+        "id": "CASE-009",
+        "title": "Layering via shell entities — Mumbai corridor (2025-Q4)",
+        "similarity": 0.81,
+        "outcome": "Account Frozen",
+        "risk_score": 94
+      }
     ],
     "notes": [
-      {"id": "NOTE-001", "author": "Sarah Chen", "content": "Initial review complete. Fund flow clearly circular with decreasing amounts suggesting extraction at each hop. Requesting freeze on intermediary accounts.", "timestamp": "2026-03-30T11:00:00Z"},
-      {"id": "NOTE-002", "author": "James Rodriguez", "content": "Confirmed: Apex Global Trading has appeared in 2 prior investigations. Recommend escalation to SAR team.", "timestamp": "2026-03-31T14:00:00Z"}
+      {
+        "id": "NOTE-001",
+        "author": "Ananya Krishnan",
+        "content": "Graph trace confirms 3-hop circular via SBI → HDFC → UCO → SBI. Extraction spread ₹5.5 L. Recommend freezing all three accounts immediately.",
+        "timestamp": "2026-03-29T09:30:00+05:30"
+      },
+      {
+        "id": "NOTE-002",
+        "author": "Vikram Nair",
+        "content": "MLRO review in progress. Legal hold placed on SBI account 30765432189. STR draft under preparation.",
+        "timestamp": "2026-04-01T10:00:00+05:30"
+      }
     ]
   },
   {
     "id": "CASE-002",
     "status": "open",
-    "created_at": "2026-03-30T03:15:00Z",
-    "updated_at": "2026-03-31T10:00:00Z",
-    "assigned_to": "Michael Torres",
-    "title": "Account takeover — Priya Sharma personal account",
-    "description": "Unauthorized transfer detected from personal savings account. New device fingerprint, off-hours activity, and atypical transfer destination.",
+    "title": "Account takeover — Priya Sharma (Axis NRO 917021847362019)",
     "risk_score": 78,
+    "assigned_to": "Rohan Deshmukh",
+    "created_at": "2026-03-30T03:20:00+05:30",
+    "updated_at": "2026-03-30T11:00:00+05:30",
+    "total_exposure": 4350000,
+    "alert_count": 1,
+    "description": "Suspected account takeover on Axis Bank NRO account 917021847362019 (Priya Sharma). Outbound NEFT of ₹43.5 L at 03:12 IST to first-seen PNB beneficiary 0462002198765432 (Vijay Kumar, Kolkata) — account opened 12 days prior. Initiating device unknown; IP mismatch (Delhi → Kolkata).",
     "explanation": null,
-    "recommended_action": "freeze_account",
-    "alert_ids": ["ALT-003"],
-    "transaction_ids": ["TXN-007", "TXN-008"],
+    "recommended_action": "Block all outbound transfers from 917021847362019. Initiate call-back authentication with the account holder. Flag PNB beneficiary 0462002198765432 (Vijay Kumar) for independent investigation. UTR UTIB26033000034 — request NEFT reversal from PNB if funds still available.",
+    "alert_ids": [
+      "ALT-003"
+    ],
+    "transaction_ids": [
+      "UTIB26033000034"
+    ],
     "primary_account": "ACC-005",
-    "total_exposure": 58000.00,
     "evidence": {
       "behavioral_analysis": {
-        "baseline_avg_amount": 3500,
-        "current_amount": 58000,
-        "deviation": 15.57,
-        "usual_time_range": "08:00-21:00 IST",
+        "baseline_avg_amount": 45000,
+        "current_amount": 4350000,
+        "deviation": 95.67,
+        "usual_time_range": "09:00-21:00 IST",
         "transaction_time": "03:12 IST",
         "time_anomaly": true,
-        "usual_locations": ["Mumbai", "Pune"],
-        "transaction_location": null
+        "usual_locations": [
+          "New Delhi"
+        ],
+        "transaction_location": "Kolkata (IP geolocation)"
       },
       "device_analysis": {
         "known_device": false,
-        "device_id": "DEV-008",
+        "device_id": "DEV-0089",
         "device_type": "Mobile",
         "os": "Android 14",
-        "ip_address": "198.51.100.73",
+        "ip_address": "49.36.212.87",
         "ip_risk": "high",
-        "geo_location": "Lagos, Nigeria"
+        "geo_location": "Kolkata, West Bengal"
       },
       "network_analysis": {
         "circular_transfers": false,
@@ -102,111 +190,181 @@
         "layering_detected": false
       }
     },
+    "alerts": [],
+    "transactions": [],
     "timeline": [
-      {"timestamp": "2026-03-30T03:12:00Z", "event_type": "transaction", "description": "Wire transfer of $58,000 to external account", "actor": "system", "metadata": {"transaction_id": "TXN-007"}},
-      {"timestamp": "2026-03-30T03:12:05Z", "event_type": "alert_generated", "description": "Alert ALT-003 generated: Account takeover suspected", "actor": "system", "metadata": {"alert_id": "ALT-003"}},
-      {"timestamp": "2026-03-30T03:15:00Z", "event_type": "case_created", "description": "Auto-generated case due to critical risk score", "actor": "system", "metadata": {}},
-      {"timestamp": "2026-03-30T08:00:00Z", "event_type": "investigation_note", "description": "Attempted to contact account holder. Left voicemail.", "actor": "Michael Torres", "metadata": {}},
-      {"timestamp": "2026-03-31T10:00:00Z", "event_type": "investigation_note", "description": "Account holder confirmed they did not authorize transaction. Account frozen pending investigation.", "actor": "Michael Torres", "metadata": {}}
+      {
+        "timestamp": "2026-03-30T03:12:00+05:30",
+        "event_type": "transaction",
+        "description": "₹43.5 L NEFT from Axis NRO 917021847362019 to PNB 0462002198765432 (Vijay Kumar, Kolkata) — UTR: UTIB26033000034",
+        "actor": "System",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-03-30T03:20:00+05:30",
+        "event_type": "alert_raised",
+        "description": "Critical ATO alert ALT-003 raised — new device, off-hours, new beneficiary",
+        "actor": "System",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-03-30T03:20:00+05:30",
+        "event_type": "case_opened",
+        "description": "Case opened and assigned to Rohan Deshmukh",
+        "actor": "System",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-03-30T11:00:00+05:30",
+        "event_type": "analyst_note",
+        "description": "Customer verified — no knowledge of this transfer. Confirmed ATO. Chargeback initiated.",
+        "actor": "Rohan Deshmukh",
+        "metadata": {}
+      }
     ],
     "similar_cases": [
-      {"id": "CASE-HIS-055", "title": "ATO via credential stuffing — high-value transfer", "similarity": 0.82, "outcome": "confirmed_fraud", "risk_score": 81}
+      {
+        "id": "CASE-007",
+        "title": "ATO via SIM-swap — Neha Joshi (Axis, 2025-Q4)",
+        "similarity": 0.84,
+        "outcome": "Funds Recovered",
+        "risk_score": 81
+      }
     ],
     "notes": [
-      {"id": "NOTE-003", "author": "Michael Torres", "content": "Customer confirmed unauthorized access. Device traced to known fraud IP range. Initiating chargeback process.", "timestamp": "2026-03-31T10:00:00Z"}
+      {
+        "id": "NOTE-003",
+        "author": "Rohan Deshmukh",
+        "content": "Account holder Ms Priya Sharma confirmed ATO at 11 AM on 30-Mar. Initiating NEFT reversal request to PNB. Device DEV-0089 blacklisted. Axis fraud team notified.",
+        "timestamp": "2026-03-30T11:00:00+05:30"
+      }
     ]
   },
   {
     "id": "CASE-003",
     "status": "investigating",
-    "created_at": "2026-03-29T09:35:00Z",
-    "updated_at": "2026-04-01T16:00:00Z",
-    "assigned_to": "Sarah Chen",
-    "title": "Synthetic identity — DataBridge Solutions rapid credit scheme",
-    "description": "New entity with synthetic identity markers showing rapid credit utilization and transfers to previously flagged accounts.",
+    "title": "Synthetic identity — Horizon Ventures India Pvt Ltd (Kotak 1634087654321)",
     "risk_score": 85,
-    "explanation": null,
-    "recommended_action": "escalate",
-    "alert_ids": ["ALT-004", "ALT-005"],
-    "transaction_ids": ["TXN-009", "TXN-010", "TXN-011"],
+    "assigned_to": "Ananya Krishnan",
+    "created_at": "2026-03-29T10:00:00+05:30",
+    "updated_at": "2026-04-02T14:00:00+05:30",
+    "total_exposure": 2250000,
+    "alert_count": 1,
+    "description": "Kotak corporate current account 1634087654321 (Horizon Ventures India Pvt Ltd, Jaipur) opened 57 days ago. GSTIN 08AABCH9012G1Z5 found inactive. First transaction is a ₹22.5 L UPI credit to a flagged Paytm VPA (rjtraders2026@paytm, 33 days old). No prior debit history. CIN U65999RJ2026PTC089234 shows company incorporated Feb 2026.",
+    "explanation": "The combination of recent incorporation (57 days), inactive GSTIN, and first transaction being a large UPI credit to a newly-created VPA strongly indicates a synthetic business identity being used for immediate round-tripping. Consistent with known modus operandi flagged in RBI Master Direction on KYC 2016 Section 16.",
+    "recommended_action": "Initiate Enhanced Due Diligence (EDD). Request GSTIN reactivation proof, latest ITR, and audited balance sheet within 15 days. Place account under 30-day monitoring. If documents unsatisfactory, escalate for closure.",
+    "alert_ids": [
+      "ALT-004"
+    ],
+    "transaction_ids": [
+      "T22603291234567890"
+    ],
     "primary_account": "ACC-007",
-    "total_exposure": 192000.00,
     "evidence": {
       "behavioral_analysis": {
         "baseline_avg_amount": 0,
-        "current_amount": 125000,
-        "deviation": 0,
-        "usual_time_range": "N/A — new account",
-        "transaction_time": "09:30 EST",
+        "current_amount": 2250000,
+        "deviation": 100.0,
+        "usual_time_range": "N/A",
+        "transaction_time": "09:30 IST",
         "time_anomaly": false,
         "usual_locations": [],
-        "transaction_location": "Delaware"
+        "transaction_location": "Jaipur"
       },
       "device_analysis": {
-        "known_device": true,
-        "device_id": "DEV-010",
-        "device_type": "Desktop",
-        "os": "macOS 14",
-        "ip_address": "192.0.2.88",
-        "ip_risk": "low",
-        "geo_location": "Wilmington, DE"
+        "known_device": false,
+        "device_id": "DEV-0101",
+        "device_type": "Mobile",
+        "os": "iOS 17.4",
+        "ip_address": "117.197.34.156",
+        "ip_risk": "medium",
+        "geo_location": "Jaipur, Rajasthan"
       },
       "network_analysis": {
         "circular_transfers": false,
-        "hop_count": 2,
-        "connected_suspicious_accounts": 2,
+        "hop_count": 1,
+        "connected_suspicious_accounts": 1,
         "layering_detected": false
       }
     },
+    "alerts": [],
+    "transactions": [],
     "timeline": [
-      {"timestamp": "2026-02-12T00:00:00Z", "event_type": "account_opened", "description": "Account ACC-007 opened for DataBridge Solutions LLC", "actor": "system", "metadata": {}},
-      {"timestamp": "2026-03-29T09:30:00Z", "event_type": "transaction", "description": "Large outbound wire of $125,000", "actor": "system", "metadata": {"transaction_id": "TXN-009"}},
-      {"timestamp": "2026-03-29T09:30:05Z", "event_type": "alert_generated", "description": "Alert ALT-004 generated: Synthetic identity indicators", "actor": "system", "metadata": {"alert_id": "ALT-004"}},
-      {"timestamp": "2026-03-29T11:15:00Z", "event_type": "transaction", "description": "Wire transfer of $67,000 to high-risk beneficiary", "actor": "system", "metadata": {"transaction_id": "TXN-011"}},
-      {"timestamp": "2026-03-29T11:15:05Z", "event_type": "alert_generated", "description": "Alert ALT-005 generated: High-risk beneficiary transfer", "actor": "system", "metadata": {"alert_id": "ALT-005"}},
-      {"timestamp": "2026-04-01T16:00:00Z", "event_type": "investigation_note", "description": "KYC review reveals thin credit file and no verifiable business history. Escalating for enhanced due diligence.", "actor": "Sarah Chen", "metadata": {}}
+      {
+        "timestamp": "2026-03-29T09:30:00+05:30",
+        "event_type": "transaction",
+        "description": "₹22.5 L UPI from Kotak 1634087654321 to rjtraders2026@paytm — UTR: T22603291234567890",
+        "actor": "System",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-03-29T10:00:00+05:30",
+        "event_type": "case_opened",
+        "description": "Case opened and assigned to Ananya Krishnan",
+        "actor": "System",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-04-02T14:00:00+05:30",
+        "event_type": "analyst_note",
+        "description": "EDD initiated. GSTIN 08AABCH9012G1Z5 confirmed inactive. CIN shows company just 57 days old. Escalating to compliance.",
+        "actor": "Ananya Krishnan",
+        "metadata": {}
+      }
     ],
-    "similar_cases": [
-      {"id": "CASE-HIS-048", "title": "Synthetic identity bust-out — Delaware shell company", "similarity": 0.91, "outcome": "confirmed_fraud", "risk_score": 90}
-    ],
+    "similar_cases": [],
     "notes": [
-      {"id": "NOTE-004", "author": "Sarah Chen", "content": "Entity verification returned thin file. Business address is a registered agent. Requesting enhanced due diligence from compliance.", "timestamp": "2026-04-01T16:00:00Z"}
+      {
+        "id": "NOTE-004",
+        "author": "Ananya Krishnan",
+        "content": "GSTIN 08AABCH9012G1Z5 inactive since incorporation. CIN U65999RJ2026PTC089234 confirms Horizon Ventures is only 57 days old. No balance sheet available. Classic synthetic identity pattern.",
+        "timestamp": "2026-04-02T14:00:00+05:30"
+      }
     ]
   },
   {
     "id": "CASE-004",
     "status": "open",
-    "created_at": "2026-03-31T16:05:00Z",
-    "updated_at": "2026-03-31T16:05:00Z",
-    "assigned_to": "Unassigned",
-    "title": "Unusual large transfer — Chen Wei International",
-    "description": "Single high-value transfer significantly exceeding account baseline. Requires review to determine if legitimate business transaction.",
-    "risk_score": 65,
+    "title": "Structuring + large IMPS anomaly — Suyash Sawant & Sterling Capital",
+    "risk_score": 81,
+    "assigned_to": "Vikram Nair",
+    "created_at": "2026-03-30T12:00:00+05:30",
+    "updated_at": "2026-03-31T18:00:00+05:30",
+    "total_exposure": 25945500,
+    "alert_count": 2,
+    "description": "Two linked alerts: (1) Probable structuring on ICICI salary account 003401234567 (Suyash Sawant) — 4 sub-threshold credits from unresolved originator over 8 days totalling ₹17.4 L. (2) IMPS ₹2.55 Cr from connected SBI corporate account 30654321987 (Sterling Capital Group India Ltd) to flagged HDFC recipient — 56x above baseline.",
     "explanation": null,
-    "recommended_action": "manual_review",
-    "alert_ids": ["ALT-006"],
-    "transaction_ids": ["TXN-012", "TXN-013"],
-    "primary_account": "ACC-009",
-    "total_exposure": 340000.00,
+    "recommended_action": "File CTR for IMPS transaction UTR SBIN26033100892 (>₹10 L). Monitor Suyash Sawant account 003401234567 for continuing structuring. Request source-of-funds declaration from Sterling Capital.",
+    "alert_ids": [
+      "ALT-005",
+      "ALT-006"
+    ],
+    "transaction_ids": [
+      "ICIC26033000716",
+      "SBIN26033100892"
+    ],
+    "primary_account": "ACC-008",
     "evidence": {
       "behavioral_analysis": {
-        "baseline_avg_amount": 28000,
-        "current_amount": 340000,
-        "deviation": 11.14,
-        "usual_time_range": "09:00-18:00 CST",
-        "transaction_time": "16:00 CST",
+        "baseline_avg_amount": 320000,
+        "current_amount": 25500000,
+        "deviation": 78.63,
+        "usual_time_range": "10:00-19:00 IST",
+        "transaction_time": "16:00 IST",
         "time_anomaly": false,
-        "usual_locations": ["Shanghai", "Hong Kong"],
-        "transaction_location": "Hong Kong"
+        "usual_locations": [
+          "Chennai"
+        ],
+        "transaction_location": "Chennai"
       },
       "device_analysis": {
         "known_device": true,
-        "device_id": "DEV-012",
+        "device_id": "DEV-0045",
         "device_type": "Desktop",
-        "os": "Windows 11",
-        "ip_address": "203.0.113.99",
+        "os": "macOS Sequoia 15.2",
+        "ip_address": "122.160.112.76",
         "ip_risk": "low",
-        "geo_location": "Hong Kong"
+        "geo_location": "Chennai, Tamil Nadu"
       },
       "network_analysis": {
         "circular_transfers": false,
@@ -215,67 +373,148 @@
         "layering_detected": false
       }
     },
+    "alerts": [],
+    "transactions": [],
     "timeline": [
-      {"timestamp": "2026-03-31T16:00:00Z", "event_type": "transaction", "description": "Wire transfer of $340,000 to Meridian Holdings", "actor": "system", "metadata": {"transaction_id": "TXN-012"}},
-      {"timestamp": "2026-03-31T16:00:05Z", "event_type": "alert_generated", "description": "Alert ALT-006 generated: Unusually large transfer", "actor": "system", "metadata": {"alert_id": "ALT-006"}},
-      {"timestamp": "2026-03-31T16:05:00Z", "event_type": "case_created", "description": "Case auto-created pending analyst assignment", "actor": "system", "metadata": {}}
+      {
+        "timestamp": "2026-03-30T12:00:00+05:30",
+        "event_type": "case_opened",
+        "description": "Case opened combining ALT-005 (structuring) and ALT-006 (IMPS anomaly)",
+        "actor": "System",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-03-31T18:00:00+05:30",
+        "event_type": "analyst_note",
+        "description": "CTR preparation initiated for UTR SBIN26033100892 (₹2.55 Cr IMPS). Source-of-funds letter sent to Sterling Capital.",
+        "actor": "Vikram Nair",
+        "metadata": {}
+      }
     ],
     "similar_cases": [],
     "notes": []
   },
   {
     "id": "CASE-005",
-    "status": "open",
-    "created_at": "2026-04-01T08:05:00Z",
-    "updated_at": "2026-04-01T10:30:00Z",
-    "assigned_to": "James Rodriguez",
-    "title": "Structuring and mule network — Horizon Ventures",
-    "description": "Pattern of sub-threshold transfers to newly opened accounts, consistent with structuring and mule network operations.",
+    "status": "escalated",
+    "title": "Mule network — Aditi Borse Enterprises disbursement ring (Axis 917030187654321)",
     "risk_score": 88,
-    "explanation": null,
-    "recommended_action": "freeze_account",
-    "alert_ids": ["ALT-007", "ALT-008"],
-    "transaction_ids": ["TXN-014", "TXN-015", "TXN-016", "TXN-017", "TXN-018", "TXN-019"],
+    "assigned_to": "Ananya Krishnan",
+    "created_at": "2026-04-01T09:00:00+05:30",
+    "updated_at": "2026-04-02T16:00:00+05:30",
+    "total_exposure": 29220000,
+    "alert_count": 2,
+    "description": "Axis Bank proprietorship current account 917030187654321 (Aditi Borse Enterprises, Bengaluru) executed 3 RTGS transfers of ₹98 L each on 01–02 Apr 2026 to newly-opened personal accounts in Punjab (P&S Bank), Odisha (UCO Bank), and Assam (UCO Bank) — all accounts <30 days old. A 4th NEFT of ₹28.2 L sent to Axis Hyderabad (SGP Holdings Pvt Ltd). Combined disbursement: ₹3.22 Cr in 25 hours.",
+    "explanation": "The simultaneous disbursement to 3 newly-opened personal accounts across geographically distant states is the hallmark of an organised mule network used to fragment and rapidly disburse proceeds of crime. The sub-threshold structure (₹98 L each, just below CTR automatic flagging) and the cross-state geographic spread maximise distance from the originator while minimising individual transaction monitoring. This meets the threshold for mandatory STR filing under PMLA Section 12(1)(b) and potential reporting under Section 12A.",
+    "recommended_action": "Immediately freeze Axis account 917030187654321 (Aditi Borse). Place legal hold on beneficiary accounts: 02381876543210 (P&S Bank, Ludhiana), 0230029876541 (UCO Bank, Bhubaneswar), 0230038765430 (UCO Bank, Guwahati). File urgent STR with FIU-IND. Notify law enforcement under PMLA Section 12A if funds not yet disbursed by mule recipients.",
+    "alert_ids": [
+      "ALT-007",
+      "ALT-008"
+    ],
+    "transaction_ids": [
+      "UTIB26040100231",
+      "UTIB26040100378",
+      "UTIB26040200104",
+      "UTIB26040100419"
+    ],
     "primary_account": "ACC-010",
-    "total_exposure": 112800.00,
     "evidence": {
       "behavioral_analysis": {
-        "baseline_avg_amount": 52000,
-        "current_amount": 9400,
-        "deviation": 0.18,
-        "usual_time_range": "09:00-17:00 EST",
-        "transaction_time": "08:00-10:30 EST",
+        "baseline_avg_amount": 1200000,
+        "current_amount": 9800000,
+        "deviation": 7.17,
+        "usual_time_range": "09:00-18:00 IST",
+        "transaction_time": "08:00–10:30 IST",
         "time_anomaly": false,
-        "usual_locations": ["Boston"],
-        "transaction_location": "Boston"
+        "usual_locations": [
+          "Bengaluru"
+        ],
+        "transaction_location": "Bengaluru"
       },
       "device_analysis": {
         "known_device": true,
-        "device_id": "DEV-014",
+        "device_id": "DEV-0062",
         "device_type": "Desktop",
-        "os": "macOS 14",
-        "ip_address": "198.51.100.22",
-        "ip_risk": "low",
-        "geo_location": "Boston, MA"
+        "os": "Windows 11",
+        "ip_address": "49.206.54.189",
+        "ip_risk": "medium",
+        "geo_location": "Bengaluru, Karnataka"
       },
       "network_analysis": {
         "circular_transfers": false,
-        "hop_count": 1,
-        "connected_suspicious_accounts": 3,
-        "layering_detected": false
+        "hop_count": 2,
+        "connected_suspicious_accounts": 4,
+        "layering_detected": true
       }
     },
+    "alerts": [],
+    "transactions": [],
     "timeline": [
-      {"timestamp": "2026-04-01T08:00:00Z", "event_type": "transaction", "description": "First of 12 sub-threshold transfers ($9,400 each)", "actor": "system", "metadata": {"transaction_id": "TXN-014"}},
-      {"timestamp": "2026-04-01T08:00:05Z", "event_type": "alert_generated", "description": "Alert ALT-007: Potential structuring detected", "actor": "system", "metadata": {"alert_id": "ALT-007"}},
-      {"timestamp": "2026-04-01T08:05:00Z", "event_type": "case_created", "description": "Case created and assigned to James Rodriguez", "actor": "system", "metadata": {}},
-      {"timestamp": "2026-04-01T10:30:00Z", "event_type": "alert_generated", "description": "Alert ALT-008: Rapid disbursement to mule accounts", "actor": "system", "metadata": {"alert_id": "ALT-008"}}
+      {
+        "timestamp": "2026-04-01T08:00:00+05:30",
+        "event_type": "transaction",
+        "description": "₹98 L RTGS from Axis 917030187654321 to P&S Bank 02381876543210 (Deepak Yadav, Ludhiana) — UTR: UTIB26040100231",
+        "actor": "System",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-04-01T09:00:00+05:30",
+        "event_type": "case_opened",
+        "description": "Case opened — mule ring pattern detected",
+        "actor": "System",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-04-01T09:15:00+05:30",
+        "event_type": "transaction",
+        "description": "₹98 L RTGS from Axis 917030187654321 to UCO Bank 0230029876541 (Kalyani Sahu, Bhubaneswar) — UTR: UTIB26040100378",
+        "actor": "System",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-04-01T11:00:00+05:30",
+        "event_type": "escalated",
+        "description": "Escalated to MLRO — confirmed mule network across 3 states",
+        "actor": "Ananya Krishnan",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-04-02T08:30:00+05:30",
+        "event_type": "transaction",
+        "description": "₹98 L RTGS from Axis 917030187654321 to UCO Bank 0230038765430 (Ranjit Dey, Guwahati) — UTR: UTIB26040200104",
+        "actor": "System",
+        "metadata": {}
+      },
+      {
+        "timestamp": "2026-04-02T16:00:00+05:30",
+        "event_type": "analyst_note",
+        "description": "Legal hold confirmed on all 4 beneficiary accounts. STR to be submitted by 09-Apr-2026.",
+        "actor": "Vikram Nair",
+        "metadata": {}
+      }
     ],
     "similar_cases": [
-      {"id": "CASE-HIS-061", "title": "Structuring via payroll mule accounts", "similarity": 0.85, "outcome": "confirmed_fraud", "risk_score": 91}
+      {
+        "id": "CASE-001",
+        "title": "Circular fund flow — Meridian Holdings India Pvt Ltd",
+        "similarity": 0.76,
+        "outcome": "STR Filed",
+        "risk_score": 92
+      }
     ],
     "notes": [
-      {"id": "NOTE-005", "author": "James Rodriguez", "content": "12 transfers all just under CTR threshold. Beneficiary accounts opened within last 30 days. Classic structuring pattern.", "timestamp": "2026-04-01T11:00:00Z"}
+      {
+        "id": "NOTE-005",
+        "author": "Ananya Krishnan",
+        "content": "All 3 mule accounts confirmed newly opened (<30 days) in Punjab, Odisha, Assam. Pattern is an organised interstate mule ring. MLRO notified. Accounts being frozen.",
+        "timestamp": "2026-04-01T11:00:00+05:30"
+      },
+      {
+        "id": "NOTE-006",
+        "author": "Vikram Nair",
+        "content": "MLRO review complete. STR draft approved. Filing date: 09-Apr-2026. All 4 beneficiary accounts frozen by respective bank branches.",
+        "timestamp": "2026-04-02T16:00:00+05:30"
+      }
     ]
   }
 ]

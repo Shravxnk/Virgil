@@ -139,7 +139,7 @@ def seed_all_collections():
     cases = load_cases()
     case_docs = [
         f"Case {c['id']}: {c['title']}. {c['description']} Risk: {c['risk_score']}/100. "
-        f"Status: {c['status']}. Exposure: ${c['total_exposure']:,.2f}."
+        f"Status: {c['status']}. Exposure: \u20b9{c['total_exposure']:,.0f}."
         for c in cases
     ]
     seed_collection("case_memory", case_docs, source="historical_cases")
@@ -148,10 +148,13 @@ def seed_all_collections():
     from app.core.data_loader import load_user_profiles
     profiles = load_user_profiles()
     behavioral_docs = [
-        f"Account {p['id']} ({p['name']}): {p['type']} account in {p['country']}. "
-        f"Avg transaction: ${p['avg_transaction_amount']:,.2f}. "
-        f"Risk: {p['risk_rating']}. Flags: {', '.join(p['flags']) if p['flags'] else 'none'}. "
-        f"Active in: {', '.join(p['usual_locations'])}."
+        f"Account {p.get('account_id', p.get('id', 'N/A'))} "
+        f"({p.get('account_holder', p.get('name', 'Unknown'))}): "
+        f"{p.get('account_type', p.get('type', 'unknown'))} account. "
+        f"City: {p.get('city', p.get('country', 'N/A'))}. "
+        f"Avg transaction: \u20b9{p.get('avg_transaction_amount', 0):,.0f}. "
+        f"Risk: {p.get('risk_rating', 'low')}. "
+        f"Flags: {', '.join(p.get('flags', [])) if p.get('flags') else 'none'}."
         for p in profiles
     ]
     seed_collection("behavioral_context", behavioral_docs, source="user_profiles")

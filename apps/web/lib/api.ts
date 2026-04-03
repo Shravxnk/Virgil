@@ -80,4 +80,30 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ query, collection, top_k: topK || 5 }),
     }),
+
+  // Pre-Transaction Scoring
+  scorePreTransaction: (data: {
+    from_account: string;
+    to_account: string;
+    amount: number;
+    txn_type?: string;
+    channel?: string;
+    device_known?: boolean;
+  }) =>
+    fetchAPI('/api/transactions/score', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getPreTxnQueue: (limit?: number) =>
+    fetchAPI(`/api/transactions/queue${limit ? `?limit=${limit}` : ''}`),
+
+  getTransactions: (params?: { flagged?: boolean; limit?: number; offset?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.flagged !== undefined) searchParams.set('flagged', String(params.flagged));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+    const qs = searchParams.toString();
+    return fetchAPI(`/api/transactions${qs ? `?${qs}` : ''}`);
+  },
 };

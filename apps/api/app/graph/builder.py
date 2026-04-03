@@ -8,7 +8,7 @@ def build_transaction_graph(transaction_ids: list[str]) -> nx.DiGraph:
     """Build a directed graph from a list of transaction IDs."""
     all_txns = load_transactions()
     txns = [t for t in all_txns if t["id"] in transaction_ids]
-    profiles = {p["id"]: p for p in load_user_profiles()}
+    profiles = {p.get("account_id", p.get("id", "")): p for p in load_user_profiles()}
 
     G = nx.DiGraph()
 

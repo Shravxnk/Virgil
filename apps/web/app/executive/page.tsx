@@ -13,7 +13,7 @@ import { DashboardSkeleton } from '@/components/shared/loading-skeleton';
 import { api } from '@/lib/api';
 import { ExecutiveDashboardResponse } from '@/types';
 import {
-  DollarSign,
+  IndianRupee,
   FileSearch,
   Target,
   Clock,
@@ -60,7 +60,7 @@ export default function ExecutiveDashboardPage() {
           <RiskScoreCard
             title="Fraud Detected"
             value={formatCurrency(data.total_fraud_detected)}
-            icon={DollarSign}
+            icon={IndianRupee}
           />
           <RiskScoreCard
             title="Active Cases"

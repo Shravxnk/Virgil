@@ -147,3 +147,50 @@ def score_transaction(transaction_id: str) -> RiskScoreResponse:
         graph_risk=result["graph_risk"],
         explanation=None,
     )
+
+
+def score_transaction_params(
+    from_account: str,
+    to_account: str,
+    amount: float,
+    txn_hour: int,
+    device_known: bool = False,
+    device_trust: float = 70.0,
+    ip_risk: str = "low",
+    currency: str = "INR",
+) -> dict:
+    """Score a transaction from raw parameters (pre-transaction, before DB entry exists)."""
+    sender_profile = get_profile_by_account(from_account)
+    receiver_profile = get_profile_by_account(to_account)
+    all_transactions = load_transactions()
+
+    baseline_avg = sender_profile["avg_transaction_amount"] if sender_profile else 0
+    usual_start, usual_end = (
+        _parse_usual_hours(sender_profile["usual_transaction_times"])
+        if sender_profile
+        else (9, 17)
+    )
+
+    is_first_time = True
+    if sender_profile:
+        is_first_time = to_account not in sender_profile.get("usual_counterparties", [])
+
+    beneficiary_flags = receiver_profile.get("flags", []) if receiver_profile else []
+    beneficiary_risk = receiver_profile.get("risk_rating", "low") if receiver_profile else "low"
+
+    graph_signals = _check_graph_signals(from_account, all_transactions)
+
+    return compute_risk_score(
+        amount=amount,
+        baseline_avg=baseline_avg,
+        transaction_hour=txn_hour,
+        usual_start=usual_start,
+        usual_end=usual_end,
+        known_device=device_known,
+        device_trust=device_trust,
+        ip_risk=ip_risk,
+        is_first_time_beneficiary=is_first_time,
+        beneficiary_flags=beneficiary_flags,
+        beneficiary_risk_rating=beneficiary_risk,
+        **graph_signals,
+    )

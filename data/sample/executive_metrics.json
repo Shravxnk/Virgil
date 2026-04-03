@@ -1,78 +1,157 @@
 {
-  "report_date": "2026-04-03",
-  "period": "2026-Q1",
-  "total_fraud_detected": 2847000,
-  "total_fraud_prevented": 1923000,
-  "active_cases": 23,
-  "resolved_cases_period": 67,
-  "false_positive_rate": 0.12,
-  "detection_rate": 0.94,
-  "avg_resolution_time_hours": 18.5,
-  "regulatory_exposure": 4200000,
+  "total_fraud_detected": 213525000,
+  "total_fraud_prevented": 144225000,
+  "regulatory_exposure": 315000000,
+  "active_cases": 12,
+  "false_positive_rate": 0.082,
+  "detection_rate": 0.918,
+  "avg_resolution_time_hours": 112.8,
   "model_health": {
-    "accuracy": 0.96,
-    "precision": 0.91,
-    "recall": 0.94,
-    "f1_score": 0.925,
+    "accuracy": 0.934,
+    "precision": 0.912,
+    "recall": 0.889,
+    "f1_score": 0.9,
     "last_retrained": "2026-03-15",
-    "data_drift_score": 0.03,
-    "feature_importance": [
-      {"feature": "transaction_velocity", "importance": 0.23},
-      {"feature": "amount_deviation", "importance": 0.19},
-      {"feature": "device_trust_score", "importance": 0.16},
-      {"feature": "beneficiary_risk", "importance": 0.14},
-      {"feature": "time_anomaly", "importance": 0.11},
-      {"feature": "graph_centrality", "importance": 0.09},
-      {"feature": "geo_risk", "importance": 0.08}
-    ]
+    "data_drift_score": 0.043
   },
-  "cases_by_status": [
-    {"status": "Open", "count": 8},
-    {"status": "Investigating", "count": 10},
-    {"status": "Escalated", "count": 5},
-    {"status": "Resolved — Fraud", "count": 42},
-    {"status": "Resolved — Legitimate", "count": 18},
-    {"status": "Closed", "count": 7}
-  ],
-  "fraud_trend": [
-    {"month": "2025-10", "detected": 312000, "prevented": 198000},
-    {"month": "2025-11", "detected": 289000, "prevented": 245000},
-    {"month": "2025-12", "detected": 445000, "prevented": 312000},
-    {"month": "2026-01", "detected": 567000, "prevented": 423000},
-    {"month": "2026-02", "detected": 612000, "prevented": 489000},
-    {"month": "2026-03", "detected": 622000, "prevented": 556000}
-  ],
-  "compliance_summary": {
-    "sar_filed": 34,
-    "sar_pending": 5,
-    "ctr_filed": 128,
-    "last_audit_date": "2026-01-15",
-    "next_audit_date": "2026-07-15",
-    "compliance_score": 94
-  },
-  "top_risk_categories": [
-    {"category": "Money Laundering", "count": 15, "amount": 1250000},
-    {"category": "Account Takeover", "count": 12, "amount": 680000},
-    {"category": "Structuring", "count": 8, "amount": 450000},
-    {"category": "Synthetic Identity", "count": 6, "amount": 320000},
-    {"category": "Wire Fraud", "count": 4, "amount": 147000}
+  "score_distribution": [
+    {
+      "range": "0-30",
+      "count": 142
+    },
+    {
+      "range": "31-60",
+      "count": 87
+    },
+    {
+      "range": "61-80",
+      "count": 45
+    },
+    {
+      "range": "81-100",
+      "count": 28
+    }
   ],
   "daily_trend": [
-    {"date": "2026-03-25", "alerts": 12, "resolved": 8},
-    {"date": "2026-03-26", "alerts": 9, "resolved": 11},
-    {"date": "2026-03-27", "alerts": 15, "resolved": 7},
-    {"date": "2026-03-28", "alerts": 18, "resolved": 12},
-    {"date": "2026-03-29", "alerts": 11, "resolved": 14},
-    {"date": "2026-03-30", "alerts": 8, "resolved": 9},
-    {"date": "2026-03-31", "alerts": 14, "resolved": 10},
-    {"date": "2026-04-01", "alerts": 16, "resolved": 13},
-    {"date": "2026-04-02", "alerts": 10, "resolved": 8}
+    {
+      "date": "2026-03-28",
+      "alerts": 12,
+      "resolved": 9
+    },
+    {
+      "date": "2026-03-29",
+      "alerts": 15,
+      "resolved": 11
+    },
+    {
+      "date": "2026-03-30",
+      "alerts": 18,
+      "resolved": 14
+    },
+    {
+      "date": "2026-03-31",
+      "alerts": 22,
+      "resolved": 17
+    },
+    {
+      "date": "2026-04-01",
+      "alerts": 19,
+      "resolved": 15
+    },
+    {
+      "date": "2026-04-02",
+      "alerts": 16,
+      "resolved": 13
+    },
+    {
+      "date": "2026-04-03",
+      "alerts": 14,
+      "resolved": 10
+    }
   ],
-  "score_distribution": [
-    {"range": "0-20", "count": 45},
-    {"range": "21-40", "count": 32},
-    {"range": "41-60", "count": 18},
-    {"range": "61-80", "count": 12},
-    {"range": "81-100", "count": 8}
+  "cases_by_status": [
+    {
+      "status": "open",
+      "count": 4
+    },
+    {
+      "status": "investigating",
+      "count": 5
+    },
+    {
+      "status": "escalated",
+      "count": 2
+    },
+    {
+      "status": "closed",
+      "count": 34
+    }
+  ],
+  "fraud_trend": [
+    {
+      "month": "Oct-25",
+      "detected": 18500000,
+      "prevented": 12200000
+    },
+    {
+      "month": "Nov-25",
+      "detected": 22100000,
+      "prevented": 15800000
+    },
+    {
+      "month": "Dec-25",
+      "detected": 19800000,
+      "prevented": 13500000
+    },
+    {
+      "month": "Jan-26",
+      "detected": 28700000,
+      "prevented": 20100000
+    },
+    {
+      "month": "Feb-26",
+      "detected": 31400000,
+      "prevented": 22600000
+    },
+    {
+      "month": "Mar-26",
+      "detected": 43200000,
+      "prevented": 30100000
+    }
+  ],
+  "compliance_summary": {
+    "sar_filed": 8,
+    "sar_pending": 2,
+    "ctr_filed": 23,
+    "last_audit_date": "2025-11-20",
+    "next_audit_date": "2026-05-15",
+    "compliance_score": 87.4
+  },
+  "top_risk_categories": [
+    {
+      "category": "Circular Fund Flow / Layering",
+      "count": 14,
+      "amount": 87500000
+    },
+    {
+      "category": "Account Takeover (ATO)",
+      "count": 9,
+      "amount": 38250000
+    },
+    {
+      "category": "Structuring / Smurfing",
+      "count": 11,
+      "amount": 42300000
+    },
+    {
+      "category": "Synthetic Identity Fraud",
+      "count": 6,
+      "amount": 19800000
+    },
+    {
+      "category": "Mule Network",
+      "count": 5,
+      "amount": 25675000
+    }
   ]
 }

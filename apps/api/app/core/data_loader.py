@@ -22,6 +22,16 @@ def _load_doc(filename: str) -> str:
         return f.read()
 
 
+def clear_all_caches() -> None:
+    """Clear all lru_cache caches so data is reloaded fresh on next access."""
+    load_alerts.cache_clear()
+    load_cases.cache_clear()
+    load_transactions.cache_clear()
+    load_user_profiles.cache_clear()
+    load_devices.cache_clear()
+    load_executive_metrics.cache_clear()
+
+
 @lru_cache()
 def load_alerts() -> list[dict]:
     return _load_json("alerts.json")
@@ -69,7 +79,7 @@ def load_reporting_templates() -> str:
 
 def get_profile_by_account(account_id: str) -> dict | None:
     for profile in load_user_profiles():
-        if profile["id"] == account_id:
+        if profile.get("account_id", profile.get("id")) == account_id:
             return profile
     return None
 

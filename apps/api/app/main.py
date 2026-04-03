@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.config import get_settings
-from app.api.routes import risk, alerts, cases, graph, reports, dashboard, feedback
+from app.api.routes import risk, alerts, cases, graph, reports, dashboard, feedback, transactions
 
 
 @asynccontextmanager
@@ -24,12 +24,23 @@ async def lifespan(app: FastAPI):
         await init_db(settings.db_host, settings.db_port, settings.db_name, settings.db_user, settings.db_password)
     except Exception as e:
         print(f"[Chakravyuh] PostgreSQL init skipped: {e}")
-    # Vector store (ChromaDB — optional)
+    # Clear JSON cache so data files are always read fresh after startup
     try:
-        from app.retrieval.vector_store import seed_all_collections
-        seed_all_collections()
-    except Exception as e:
-        print(f"[Chakravyuh] Vector store seeding skipped: {e}")
+        from app.core.data_loader import clear_all_caches
+        clear_all_caches()
+    except Exception:
+        pass
+    # Vector store (ChromaDB — optional, seeded in a daemon thread so it never blocks startup)
+    import threading
+    def _seed_bg():
+        try:
+            from app.retrieval.vector_store import seed_all_collections
+            seed_all_collections()
+            print("[Chakravyuh] Vector store seeding complete.")
+        except Exception as e:
+            print(f"[Chakravyuh] Vector store seeding skipped: {e}")
+    t = threading.Thread(target=_seed_bg, daemon=True)
+    t.start()
     yield
 
 
@@ -58,6 +69,7 @@ app.include_router(graph.router, prefix="/api")
 app.include_router(reports.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(feedback.router, prefix="/api")
+app.include_router(transactions.router, prefix="/api")
 
 
 @app.get("/health")

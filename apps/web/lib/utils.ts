@@ -5,8 +5,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+export function formatCurrency(amount: number, currency: string = 'INR'): string {
+  if (currency === 'INR') {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
@@ -14,8 +22,17 @@ export function formatCurrency(amount: number, currency: string = 'USD'): string
   }).format(amount);
 }
 
+export function formatINR(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
 export function formatNumber(n: number): string {
-  return new Intl.NumberFormat('en-US').format(n);
+  return new Intl.NumberFormat('en-IN').format(n);
 }
 
 export function formatPercent(n: number): string {
@@ -23,42 +40,44 @@ export function formatPercent(n: number): string {
 }
 
 export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  return new Date(dateStr).toLocaleDateString('en-IN', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'Asia/Kolkata',
   });
 }
 
 export function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('en-US', {
+  return new Date(dateStr).toLocaleString('en-IN', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'Asia/Kolkata',
   });
 }
 
 export function severityColor(severity: string): string {
   const colors: Record<string, string> = {
-    critical: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-    medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    low: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    critical: 'bg-red-50 text-red-700 border border-red-200',
+    high: 'bg-orange-50 text-orange-700 border border-orange-200',
+    medium: 'bg-amber-50 text-amber-700 border border-amber-200',
+    low: 'bg-green-50 text-green-700 border border-green-200',
   };
   return colors[severity] || colors.low;
 }
 
 export function statusColor(status: string): string {
   const colors: Record<string, string> = {
-    new: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    open: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    investigating: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-    escalated: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-    resolved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    resolved_fraud: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    resolved_legitimate: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    closed: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+    new: 'bg-blue-50 text-blue-700 border border-blue-200',
+    open: 'bg-blue-50 text-blue-700 border border-blue-200',
+    investigating: 'bg-amber-50 text-amber-700 border border-amber-200',
+    escalated: 'bg-red-50 text-red-700 border border-red-200',
+    resolved: 'bg-green-50 text-green-700 border border-green-200',
+    resolved_fraud: 'bg-red-50 text-red-700 border border-red-200',
+    resolved_legitimate: 'bg-green-50 text-green-700 border border-green-200',
+    closed: 'bg-slate-50 text-slate-600 border border-slate-200',
   };
   return colors[status] || colors.new;
 }

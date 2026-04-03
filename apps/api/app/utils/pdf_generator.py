@@ -119,11 +119,28 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
         styles["BodyText2"],
     ))
 
-    # 3. Suspicious Activity Narrative
+    # 3. Suspicious Activity Narrative (AI-generated)
     story.append(Paragraph("3. Suspicious Activity Description", styles["SectionHead"]))
     evidence_summary = _format_evidence_text(case_data.get("evidence", {}))
-    narrative = generate_report_narrative(case_data, evidence_summary)
-    story.append(Paragraph(narrative, styles["BodyText2"]))
+    # Build enriched context for AI: include all transaction details
+    txn_ids = case_data.get("transaction_ids", [])
+    txn_context = evidence_summary
+    if txn_ids:
+        from app.core.data_loader import load_transactions
+        all_txns = load_transactions()
+        case_txns = [t for t in all_txns if t["id"] in txn_ids]
+        txn_lines = []
+        for t in case_txns:
+            txn_lines.append(
+                f"  [{t['id']}] {t['timestamp'][:10]} | ₹{t['amount']:,.0f} | "
+                f"From: {t['from_account']} → To: {t['to_account']} | "
+                f"Type: {t.get('type', t.get('txn_type','N/A'))} | Channel: {t.get('channel','N/A')} | "
+                f"Status: {t.get('status','N/A')}"
+            )
+        if txn_lines:
+            txn_context += "\n\nLinked Transactions:\n" + "\n".join(txn_lines)
+    narrative = generate_report_narrative(case_data, txn_context)
+    story.append(Paragraph(narrative.replace("\n\n", "<br/><br/>").replace("\n", "<br/>"), styles["BodyText2"]))
 
     # 4. Transaction Details
     story.append(Paragraph("4. Transaction Details", styles["SectionHead"]))
@@ -133,18 +150,19 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
         all_txns = load_transactions()
         case_txns = [t for t in all_txns if t["id"] in txn_ids]
 
-        txn_table_data = [["ID", "From", "To", "Amount", "Date", "Type"]]
+        txn_table_data = [["ID", "From Account", "To Account", "Amount (₹)", "Date", "Type", "Channel"]]
         for t in case_txns:
             txn_table_data.append([
                 t["id"],
                 t["from_account"],
                 t["to_account"],
-                f"${t['amount']:,.2f}",
+                f"₹{t['amount']:,.0f}",
                 t["timestamp"][:10],
-                t["type"],
+                t.get("type", t.get("txn_type", "N/A")),
+                t.get("channel", "N/A"),
             ])
 
-        txn_table = Table(txn_table_data, colWidths=[0.8 * inch, 0.9 * inch, 0.9 * inch, 1.0 * inch, 0.9 * inch, 0.7 * inch])
+        txn_table = Table(txn_table_data, colWidths=[0.8*inch, 1.0*inch, 1.0*inch, 0.9*inch, 0.8*inch, 0.8*inch, 0.7*inch])
         txn_table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a1a2e")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),

@@ -12,6 +12,7 @@ class Severity(str, Enum):
 
 class AlertStatus(str, Enum):
     new = "new"
+    open = "open"
     investigating = "investigating"
     resolved = "resolved"
     escalated = "escalated"
@@ -20,7 +21,7 @@ class AlertStatus(str, Enum):
 class AlertResponse(BaseModel):
     id: str
     case_id: Optional[str] = None
-    transaction_id: str
+    transaction_id: Optional[str] = None
     alert_type: str
     severity: Severity
     status: AlertStatus

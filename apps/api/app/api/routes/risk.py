@@ -21,7 +21,7 @@ async def get_risk_score(transaction_id: str = Query(..., description="Transacti
             "account_name": transaction_id,
             "account_id": transaction_id,
             "amount": 0,
-            "currency": "USD",
+            "currency": "INR",
             "risk_score": result.score,
             "severity": "high" if result.score >= 60 else "medium",
             "description": f"Reason codes: {', '.join(result.reason_codes)}",
