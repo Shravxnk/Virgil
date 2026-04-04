@@ -67,7 +67,7 @@ reports_output/
 *.tmp
 
 # Root readme
-
+README_OLD.md
 WALKTHROUGH.md
 EXPLAINED.md
 new.md
