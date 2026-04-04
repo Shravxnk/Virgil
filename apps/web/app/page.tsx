@@ -1,190 +1,149 @@
-'use client';
-
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import {
-  Shield,
-  Search,
-  Network,
-  BarChart3,
-  FileText,
-  Zap,
-  ArrowRight,
-  CheckCircle2,
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Shield, Eye, BarChart3, FlaskConical, ArrowRight, Lock, Zap, Network, Brain } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-const features = [
-  {
-    icon: Zap,
-    title: 'Pre-Transaction Decisioning',
-    description: 'Real-time approve / block / MFA / manual-review decisions based on behavioural baseline, device trust, velocity, and graph signals.',
-    tag: 'RBI Aligned',
-  },
-  {
-    icon: Search,
-    title: 'Post-Transaction Investigation',
-    description: 'Full case management with timeline reconstruction, fund-flow tracing, evidence packaging, and analyst action centre.',
-    tag: 'PMLA Compliant',
-  },
-  {
-    icon: Network,
-    title: 'Graph-Based Fund-Flow Analysis',
-    description: 'Detect circular transfers, layering rings, and mule networks using NetworkX-powered graph analytics.',
-    tag: 'FIU-IND Ready',
-  },
-  {
-    icon: Shield,
-    title: 'AI Explanation Layer',
-    description: 'OpenAI GPT-4o mini generates plain-language alert explanations, case narratives, and STR drafts for analysts.',
-    tag: 'Auditable',
-  },
-  {
-    icon: FileText,
-    title: 'Regulatory Report Export',
-    description: 'FIU-style PDF reports with chain-of-custody hashing, transaction timelines, and evidence summaries.',
-    tag: 'PDF Export',
-  },
-  {
-    icon: BarChart3,
-    title: 'Executive Intelligence',
-    description: 'KPI dashboards, compliance tracker, model health monitor, SAR/CTR metrics, and learning loop summaries.',
-    tag: 'CXO Ready',
-  },
-];
-
-const capabilities = [
-  'Structuring / Sub-threshold detection',
-  'Account takeover signals',
-  'Synthetic identity detection',
-  'Circular fund-flow mapping',
-  'NEFT / RTGS / UPI channel analysis',
-  'Behavioural baseline deviation',
-];
-
-const container = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.07 } },
-};
-const item = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
-
-export default function LandingPage() {
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#f7f9fc]">
-      {/* Top nav bar */}
-      <nav className="sticky top-0 z-10 bg-white border-b px-8 h-14 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
-            <Shield className="h-3.5 w-3.5 text-white" />
-          </div>
-          <span className="text-sm font-bold text-foreground tracking-tight">Chakravyuh</span>
-          <Badge variant="outline" className="text-[10px] text-muted-foreground ml-1">v1.1</Badge>
+    <div className="min-h-screen bg-[#f7f9fc] flex flex-col">
+
+      {/* Top Nav */}
+      <nav className="sticky top-0 z-10 bg-white border-b px-6 h-14 flex items-center gap-3 shadow-sm">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
+          <Shield className="h-3.5 w-3.5 text-white" />
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/analyst">
-            <Button variant="ghost" size="sm" className="text-sm">Analyst Console</Button>
-          </Link>
-          <Link href="/executive">
-            <Button size="sm" className="text-sm">Executive Dashboard</Button>
-          </Link>
-        </div>
+        <span className="text-sm font-bold tracking-tight">Chakravyuh</span>
+        <Badge variant="outline" className="text-[10px] text-muted-foreground">v1.2.0</Badge>
       </nav>
 
       {/* Hero */}
-      <div className="mx-auto max-w-5xl px-8 pt-20 pb-16 text-center">
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <Badge className="mb-5 bg-primary/10 text-primary border border-primary/20 text-xs font-medium px-3 py-1">
-            Indian Banking · Fraud Intelligence · v1.1
-          </Badge>
-          <h1 className="text-5xl font-extrabold tracking-tight text-foreground leading-tight">
-            Chakra<span className="text-primary">vyuh</span>
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground leading-relaxed">
-            A multi-layered fraud intelligence platform for Indian banking institutions —
-            combining behavioural analytics, graph-based fund-flow tracing, and AI-assisted
-            investigation workflows.
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25, duration: 0.4 }}
-          className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3"
-        >
-          <Link href="/analyst">
-            <Button size="lg" className="gap-2 min-w-[200px] h-11">
-              <Search className="h-4 w-4" />
-              Analyst Console
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
-          <Link href="/executive">
-            <Button size="lg" variant="outline" className="gap-2 min-w-[200px] h-11">
-              <BarChart3 className="h-4 w-4" />
-              Executive Dashboard
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
-        </motion.div>
+      <div className="flex flex-col items-center justify-center text-center py-20 px-6">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary mb-5 shadow-lg">
+          <Shield className="h-8 w-8 text-white" />
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight">Chakravyuh</h1>
+        <p className="text-muted-foreground mt-2 max-w-md text-sm leading-relaxed">
+          AI-powered banking fraud intelligence platform — real-time risk scoring, AML graph analysis,
+          LLM-powered investigation, and FIU-IND-compliant reporting.
+        </p>
+        <div className="flex flex-wrap gap-2 justify-center mt-4">
+          <Badge variant="secondary">Pre-Transaction Prevention</Badge>
+          <Badge variant="secondary">Graph Intelligence</Badge>
+          <Badge variant="secondary">LLM Investigation</Badge>
+          <Badge variant="secondary">FIU Reporting</Badge>
+        </div>
       </div>
 
-      {/* Features */}
-      <div className="mx-auto max-w-5xl px-8 pb-16">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground text-center mb-8">
-          Core Capabilities
-        </h2>
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {features.map((feature) => (
-            <motion.div key={feature.title} variants={item}>
-              <Card className="h-full bg-white border border-border/70 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200">
-                <CardContent className="pt-5 pb-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                      <feature.icon className="h-4.5 w-4.5 text-primary" />
-                    </div>
-                    <Badge variant="outline" className="text-[10px] text-muted-foreground">{feature.tag}</Badge>
-                  </div>
-                  <CardTitle className="text-sm mb-1.5">{feature.title}</CardTitle>
-                  <CardDescription className="text-sm leading-relaxed">{feature.description}</CardDescription>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
+      {/* Navigation Cards */}
+      <div className="flex flex-col items-center px-6 pb-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full max-w-4xl">
 
-      {/* Capabilities Strip */}
-      <div className="border-t border-b bg-white py-10 px-8">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground text-center mb-6">
-            Detection Coverage
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {capabilities.map((cap) => (
-              <div key={cap} className="flex items-center gap-2 text-sm text-foreground">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                {cap}
+          {/* Analyst Console */}
+          <Card className="shadow-sm hover:shadow-md transition-shadow bg-white">
+            <CardHeader className="pb-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 mb-2">
+                <Eye className="h-5 w-5 text-blue-600" />
               </div>
-            ))}
-          </div>
+              <CardTitle className="text-base">Analyst Console</CardTitle>
+              <CardDescription className="text-xs leading-relaxed">
+                Alert inbox, case investigation, manual review queue, pre-transaction analytics,
+                and AI-generated fraud explanations.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-2">
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li className="flex items-center gap-1.5"><Lock className="h-3 w-3" />Alert inbox with risk ranking</li>
+                <li className="flex items-center gap-1.5"><Network className="h-3 w-3" />Case graph investigation</li>
+                <li className="flex items-center gap-1.5"><Brain className="h-3 w-3" />LLM-generated explanations</li>
+                <li className="flex items-center gap-1.5"><Zap className="h-3 w-3" />Pre-transaction analytics</li>
+              </ul>
+              <Link href="/analyst" className="block">
+                <Button className="w-full mt-2 gap-2">
+                  Open Analyst Console <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Executive Dashboard */}
+          <Card className="shadow-sm hover:shadow-md transition-shadow bg-white">
+            <CardHeader className="pb-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 mb-2">
+                <BarChart3 className="h-5 w-5 text-indigo-600" />
+              </div>
+              <CardTitle className="text-base">Executive Dashboard</CardTitle>
+              <CardDescription className="text-xs leading-relaxed">
+                Enterprise-level KPIs, fraud trend analysis, model health monitoring,
+                and compliance tracking for leadership.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-2">
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li className="flex items-center gap-1.5"><BarChart3 className="h-3 w-3" />Fraud KPIs and trend charts</li>
+                <li className="flex items-center gap-1.5"><Zap className="h-3 w-3" />Model accuracy and precision</li>
+                <li className="flex items-center gap-1.5"><Lock className="h-3 w-3" />Compliance score and SARs</li>
+                <li className="flex items-center gap-1.5"><Network className="h-3 w-3" />Risk category breakdown</li>
+              </ul>
+              <Link href="/executive" className="block">
+                <Button className="w-full mt-2 gap-2" variant="outline">
+                  Open Executive Dashboard <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Test Case Simulation */}
+          <Card className="shadow-sm hover:shadow-md transition-shadow bg-white border-dashed border-2">
+            <CardHeader className="pb-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 mb-2">
+                <FlaskConical className="h-5 w-5 text-teal-600" />
+              </div>
+              <CardTitle className="text-base">Test Case Simulation</CardTitle>
+              <CardDescription className="text-xs leading-relaxed">
+                Fire all 34 use cases live — pre-transaction scoring, graph detection,
+                analyst workflows, executive metrics, and the learning loop.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-2">
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li className="flex items-center gap-1.5"><Shield className="h-3 w-3" />9 pre-transaction scenarios</li>
+                <li className="flex items-center gap-1.5"><Network className="h-3 w-3" />9 post-transaction / AML cases</li>
+                <li className="flex items-center gap-1.5"><Eye className="h-3 w-3" />7 analyst dashboard flows</li>
+                <li className="flex items-center gap-1.5"><Brain className="h-3 w-3" />Custom transaction builder</li>
+              </ul>
+              <Link href="/analyst/demo" className="block">
+                <Button className="w-full mt-2 gap-2" variant="outline">
+                  Run Test Cases <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+        </div>
+
+        {/* Quick stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mt-8">
+          {[
+            { label: 'Use Cases', value: '34', sub: 'across 5 groups' },
+            { label: 'API Endpoints', value: '12+', sub: 'REST API' },
+            { label: 'Risk Signals', value: '5', sub: 'behavioral dimensions' },
+            { label: 'AI Model', value: 'GPT-4o-mini', sub: 'RAG + ChromaDB' },
+          ].map(s => (
+            <div key={s.label} className="rounded-lg border bg-white px-4 py-3 text-center shadow-sm">
+              <p className="text-xl font-bold text-primary">{s.value}</p>
+              <p className="text-xs font-medium">{s.label}</p>
+              <p className="text-[10px] text-muted-foreground">{s.sub}</p>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="py-8 text-center">
-        <p className="text-xs text-muted-foreground">
-          Chakravyuh · Next.js 14 · FastAPI · OpenAI GPT-4o mini · NetworkX · MongoDB ·{' '}
-          <span className="text-primary">Made for Indian Banking</span>
-        </p>
+      <footer className="border-t bg-white py-4 text-center text-[11px] text-muted-foreground">
+        Chakravyuh v1.2.0 · Built by Suyash Sawant · Indian Banking Fraud Intelligence
       </footer>
+
     </div>
   );
 }

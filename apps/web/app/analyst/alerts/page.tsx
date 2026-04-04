@@ -43,6 +43,8 @@ export default function AlertsPage() {
       }
     }
     load();
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
   }, [severity, status]);
 
   const filtered = data?.alerts.filter((a) => {

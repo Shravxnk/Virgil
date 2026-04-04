@@ -141,7 +141,11 @@ export default function PreTxnAnalyticsPage() {
     }
   }, []);
 
-  useEffect(() => { fetchQueue(); }, [fetchQueue]);
+  useEffect(() => {
+    fetchQueue();
+    const id = setInterval(() => fetchQueue(), 15000);
+    return () => clearInterval(id);
+  }, [fetchQueue]);
 
   // ── Analytics ──────────────────────────────────────────────────────
   const total = data.length;
@@ -234,16 +238,10 @@ export default function PreTxnAnalyticsPage() {
               the deterministic fraud engine: Approve / MFA / Manual Review / Block.
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs"
-            onClick={() => fetchQueue(true)}
-            disabled={refreshing}
-          >
-            <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
-            Refresh
-          </Button>
+          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <RefreshCw className={cn('h-3 w-3', refreshing && 'animate-spin')} />
+            Auto-refreshing every 15s
+          </span>
         </div>
 
         {/* KPI Cards */}

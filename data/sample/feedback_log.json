@@ -1,0 +1,44 @@
+[
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T00:59:49.676412Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T01:12:18.971525Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T01:12:18.987686Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T01:12:19.003558Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T01:12:19.015545Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T01:12:19.032618Z"
+  }
+]

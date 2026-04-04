@@ -23,6 +23,8 @@ export default function CasesPage() {
       }
     }
     load();
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
   }, []);
 
   return (

@@ -32,6 +32,8 @@ export default function AnalystDashboardPage() {
       }
     }
     load();
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
   }, []);
 
   if (loading || !dashboard) {

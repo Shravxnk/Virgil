@@ -464,3 +464,79 @@ ACTION: [one specific action]"""
         "action": action,
         "score": score,
     }
+
+
+SCENARIO_GENERATOR_SYSTEM = """You are a fraud scenario parameter generator for an Indian banking fraud detection system.
+
+Given a plain-English description of a fraud scenario, you generate realistic transaction parameters as a JSON object.
+The JSON must have exactly these fields:
+{
+  "from_account": string,   // account ID, e.g. "ACC-SCENARIO-01" — make it contextual
+  "to_account": string,     // account ID, e.g. "ACC-MULE-99" — use names like ACC-MULE, ACC-SHELL, ACC-SAFE depending on context
+  "amount": number,         // in INR (no ₹ symbol), e.g. 450000 for ₹4.5 lakh
+  "txn_type": string,       // one of: UPI, NEFT, RTGS, IMPS — match the scenario
+  "channel": string,        // one of: mobile, net_banking, branch, atm
+  "device_known": boolean,  // true = trusted registered device, false = unknown/new device
+  "ip_address": string,     // use 185.220.x.x for high-risk/suspicious, 103.21.x.x or 122.x.x.x for normal
+  "geo_location": string,   // Indian city name
+  "narrative": string       // 2-3 sentences explaining why this specific scenario is suspicious and what fraud pattern it represents
+}
+
+Rules:
+- For fraud / suspicious scenarios: set device_known=false, use 185.x.x.x IP, use large amounts
+- For normal / approved scenarios: set device_known=true, use 103.x.x.x IP, normal amounts
+- Use RTGS for >₹2 lakh, IMPS or UPI for smaller amounts, NEFT for payroll-style
+- Return ONLY valid JSON — no markdown, no code fences, no explanation outside the JSON"""
+
+
+def generate_scenario_from_description(description: str) -> dict:
+    """Use OpenAI to generate realistic transaction parameters from a free-text fraud scenario description."""
+    import json as _json
+
+    prompt = f"Generate transaction parameters for this scenario:\n\n{description}"
+    result = chat_completion(SCENARIO_GENERATOR_SYSTEM, prompt, max_tokens=500)
+
+    if result:
+        cleaned = result.strip()
+        # Strip markdown code fences if present
+        if cleaned.startswith("```"):
+            parts = cleaned.split("```")
+            cleaned = parts[1] if len(parts) > 1 else cleaned
+            if cleaned.startswith("json"):
+                cleaned = cleaned[4:]
+        try:
+            data = _json.loads(cleaned.strip())
+            # Ensure required fields have defaults
+            data.setdefault("from_account", "ACC-SCENARIO-01")
+            data.setdefault("to_account", "ACC-SCENARIO-02")
+            data.setdefault("amount", 500000)
+            data.setdefault("txn_type", "UPI")
+            data.setdefault("channel", "mobile")
+            data.setdefault("device_known", False)
+            data.setdefault("ip_address", "185.220.101.55")
+            data.setdefault("geo_location", "Mumbai")
+            data.setdefault("narrative", description[:250])
+            return data
+        except Exception:
+            pass
+
+    # Rule-based fallback (no OpenAI key configured)
+    desc_lower = description.lower()
+    is_fraud = any(w in desc_lower for w in ["fraud", "suspicious", "unknown", "mule", "takeover", "launder", "block", "fake", "stolen", "hack"])
+    is_large = any(w in desc_lower for w in ["large", "crore", "lakh", "million", "huge", "big", "high"])
+    is_night = any(w in desc_lower for w in ["night", "3am", "2am", "midnight", "late"])
+
+    return {
+        "from_account": "ACC-SCENARIO-01",
+        "to_account": "ACC-MULE-99" if is_fraud else "ACC-SAFE-01",
+        "amount": 2500000 if is_large else 350000,
+        "txn_type": "RTGS" if is_large else "UPI",
+        "channel": "mobile",
+        "device_known": not is_fraud,
+        "ip_address": "185.220.101.55" if is_fraud else "103.21.58.12",
+        "geo_location": "Mumbai",
+        "narrative": (
+            f"Scenario derived from description: {description[:200]}. "
+            f"{'High-risk signals detected — device unknown, suspicious IP, large amount.' if is_fraud else 'Low-risk transaction pattern — trusted device, normal IP, standard amount.'}"
+        ),
+    }

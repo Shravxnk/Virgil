@@ -24,11 +24,13 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     frontend_url: str = "http://localhost:3000"
+    # Extra CORS origins (comma-separated) — add network IPs here for LAN access
+    cors_origins: str = ""
 
     data_dir: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "..", "data")
 
     class Config:
-        env_file = ".env"
+        env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), ".env")
         env_file_encoding = "utf-8"
 
 
