@@ -113,7 +113,7 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
     story.append(Paragraph(
         f"<b>Primary Account:</b> {case_data.get('primary_account', 'N/A')}<br/>"
         f"<b>Title:</b> {case_data.get('title', 'N/A')}<br/>"
-        f"<b>Total Exposure:</b> ${case_data.get('total_exposure', 0):,.2f}<br/>"
+        f"<b>Total Exposure:</b> \u20b9{case_data.get('total_exposure', 0):,.0f}<br/>"
         f"<b>Recommended Action:</b> {case_data.get('recommended_action', 'N/A')}",
         styles["BodyText2"],
     ))
@@ -125,8 +125,8 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
     txn_ids = case_data.get("transaction_ids", [])
     txn_context = evidence_summary
     if txn_ids:
-        from app.core.data_loader import load_transactions
-        all_txns = load_transactions()
+        from app.db.repositories.runtime_store import list_transactions
+        all_txns = list_transactions()
         case_txns = [t for t in all_txns if t["id"] in txn_ids]
         txn_lines = []
         for t in case_txns:
@@ -145,8 +145,8 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
     story.append(Paragraph("4. Transaction Details", styles["SectionHead"]))
     txn_ids = case_data.get("transaction_ids", [])
     if txn_ids:
-        from app.core.data_loader import load_transactions
-        all_txns = load_transactions()
+        from app.db.repositories.runtime_store import list_transactions
+        all_txns = list_transactions()
         case_txns = [t for t in all_txns if t["id"] in txn_ids]
 
         txn_table_data = [["ID", "From Account", "To Account", "Amount (₹)", "Date", "Type", "Channel"]]
@@ -232,8 +232,8 @@ def _format_evidence_text(evidence: dict) -> str:
     ba = evidence.get("behavioral_analysis", {})
     if ba:
         lines.append(f"Behavioral Analysis: Amount deviation {ba.get('deviation', 'N/A')}x from baseline. "
-                      f"Baseline avg: ${ba.get('baseline_avg_amount', 0):,.2f}, "
-                      f"Transaction: ${ba.get('current_amount', 0):,.2f}. "
+                      f"Baseline avg: \u20b9{ba.get('baseline_avg_amount', 0):,.0f}, "
+                      f"Transaction: \u20b9{ba.get('current_amount', 0):,.0f}. "
                       f"Time anomaly: {'Yes' if ba.get('time_anomaly') else 'No'}.")
 
     da = evidence.get("device_analysis", {})

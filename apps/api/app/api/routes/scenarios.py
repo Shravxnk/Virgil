@@ -1,5 +1,7 @@
 """Scenario generation route — uses OpenAI to build transaction parameters from a description."""
 
+import asyncio
+
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
@@ -20,5 +22,5 @@ async def generate_scenario(request: ScenarioRequest):
     device_known, ip_address, geo_location, and a narrative explaining the scenario.
     Falls back to rule-based generation when OpenAI is not configured.
     """
-    params = generate_scenario_from_description(request.description)
+    params = await asyncio.to_thread(generate_scenario_from_description, request.description)
     return params

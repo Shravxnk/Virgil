@@ -5,7 +5,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from app.core.data_loader import load_transactions
 from app.db import connection
 
 # ---------------------------------------------------------------------------
@@ -37,14 +36,23 @@ async def find_transactions(
         )
         async with pool.acquire() as conn:
             rows = await conn.fetch(query, *params)
-        return [_txn_row_to_dict(r) for r in rows]
-    txns = load_transactions()
+        if rows:
+            return [_txn_row_to_dict(r) for r in rows]
+    # PG unavailable or empty — fall back to runtime store
+    from app.db.repositories.runtime_store import list_transactions as rt_list
+    runtime = rt_list()
     if flagged is not None:
-        txns = [t for t in txns if t.get("flagged") == flagged]
-    return txns[skip: skip + limit]
+        runtime = [t for t in runtime if bool(t.get("flagged")) == flagged]
+    runtime.sort(key=lambda t: t.get("timestamp") or t.get("ts", ""), reverse=True)
+    return runtime[skip: skip + limit]
 
 
 async def find_transaction_by_id(txn_id: str) -> Optional[dict]:
+    # Check runtime store first (covers seeded + dynamically-created transactions)
+    from app.db.repositories.runtime_store import get_transaction
+    runtime = get_transaction(txn_id)
+    if runtime:
+        return runtime
     if connection.PG_AVAILABLE:
         pool = connection.get_pool()
         query = (
@@ -55,8 +63,9 @@ async def find_transaction_by_id(txn_id: str) -> Optional[dict]:
         )
         async with pool.acquire() as conn:
             row = await conn.fetchrow(query, txn_id)
-        return _txn_row_to_dict(row) if row else None
-    return next((t for t in load_transactions() if t["id"] == txn_id), None)
+        if row:
+            return _txn_row_to_dict(row)
+    return None
 
 
 async def count_transactions(flagged: Optional[bool] = None) -> int:
@@ -64,13 +73,18 @@ async def count_transactions(flagged: Optional[bool] = None) -> int:
         pool = connection.get_pool()
         if flagged is not None:
             async with pool.acquire() as conn:
-                return await conn.fetchval("SELECT COUNT(*) FROM transactions WHERE flagged = $1", flagged)
-        async with pool.acquire() as conn:
-            return await conn.fetchval("SELECT COUNT(*) FROM transactions")
-    txns = load_transactions()
+                pg_count = await conn.fetchval("SELECT COUNT(*) FROM transactions WHERE flagged = $1", flagged)
+        else:
+            async with pool.acquire() as conn:
+                pg_count = await conn.fetchval("SELECT COUNT(*) FROM transactions")
+        if pg_count > 0:
+            return pg_count
+    # PG unavailable or empty — count runtime store
+    from app.db.repositories.runtime_store import list_transactions as rt_list
+    runtime = rt_list()
     if flagged is not None:
-        txns = [t for t in txns if t.get("flagged") == flagged]
-    return len(txns)
+        runtime = [t for t in runtime if bool(t.get("flagged")) == flagged]
+    return len(runtime)
 
 
 # ---------------------------------------------------------------------------

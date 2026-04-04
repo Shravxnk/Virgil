@@ -31,6 +31,9 @@ async def init_db(host: str, port: int, database: str, user: str, password: str)
             max_size=10,
             command_timeout=10,
         )
+        # Verify connection is actually usable before marking PG as available
+        async with _pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
         with open(_SCHEMA_PATH, encoding="utf-8") as f:
             ddl = f.read()
         async with _pool.acquire() as conn:

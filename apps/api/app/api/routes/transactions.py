@@ -1,5 +1,7 @@
 """Transaction routes — pre-transaction scoring + queue + completed transactions."""
 
+import asyncio
+import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -34,6 +36,143 @@ class PreTxnRequest(BaseModel):
     geo_location: Optional[str] = None
     upi_ref: Optional[str] = None
     currency: str = "INR"
+
+
+def _severity_for_score(score: int) -> str:
+    if score >= 80: return "critical"
+    if score >= 65: return "high"
+    if score >= 50: return "medium"
+    return "low"
+
+
+async def _auto_generate_alert_and_case(
+    pre_id: str, req: PreTxnRequest, result: dict, scored_at: str
+) -> tuple[str | None, str | None]:
+    """
+    For high-risk scored transactions, auto-create an alert (score ≥ 50)
+    and a case (score ≥ 75). Returns (alert_id, case_id) or (None, None).
+    """
+    from app.db.repositories.alert_repo import insert_alert
+    from app.db.repositories.case_repo import insert_case
+
+    score = int(result["score"])
+    decision = result["decision"]
+    if decision == "approve":
+        return None, None
+
+    severity = _severity_for_score(score)
+    alert_id = f"ALT-{uuid.uuid4().hex[:6].upper()}"
+    alert_type_map = {
+        "block": "high_risk_block",
+        "manual_review": "manual_review_required",
+        "mfa": "step_up_auth_triggered",
+    }
+    alert = {
+        "id": alert_id,
+        "case_id": None,
+        "transaction_id": pre_id,
+        "alert_type": alert_type_map.get(result["decision"], "risk_flag"),
+        "severity": severity,
+        "status": "investigating",
+        "title": f"{result['decision'].upper()} — {req.from_account} → {req.to_account} ₹{int(req.amount):,}",
+        "description": (
+            f"Pre-transaction risk score {score}/100. "
+            f"Decision: {result['decision'].upper()}. "
+            f"Signals: amount_anomaly={result.get('amount_anomaly', 0):.1f}, "
+            f"device_mismatch={result.get('device_mismatch', False)}, "
+            f"time_anomaly={result.get('time_anomaly', 0):.1f}. "
+            f"Channel: {req.txn_type} via {req.channel}."
+        ),
+        "risk_score": score,
+        "timestamp": scored_at,
+        "account_id": req.from_account,
+        "account_name": req.from_account,
+        "account_number": "",
+        "bank": "",
+        "ifsc": "",
+        "amount": int(req.amount),
+        "currency": req.currency,
+        "utr": pre_id,
+        "assigned_to": "Auto-assigned",
+        "regulatory_ref": "PMLA 2002 Section 3" if score >= 75 else "",
+    }
+    await insert_alert(alert)
+
+    case_id = None
+    if decision in ("manual_review", "block"):
+        case_id = f"CASE-{uuid.uuid4().hex[:6].upper()}"
+        alert["case_id"] = case_id
+        # Patch alert with case_id
+        await insert_alert(alert)
+        case = {
+            "id": case_id,
+            "status": "open",
+            "title": f"Auto-detected: {req.txn_type} risk — {req.from_account}",
+            "risk_score": score,
+            "assigned_to": "Auto-assigned",
+            "created_at": scored_at,
+            "updated_at": scored_at,
+            "total_exposure": int(req.amount),
+            "alert_count": 1,
+            "description": (
+                f"Automatically opened from pre-transaction scoring. "
+                f"Score {score}/100, decision {result['decision'].upper()}. "
+                f"From account {req.from_account} attempting {req.txn_type} of "
+                f"₹{int(req.amount):,} to {req.to_account} via {req.channel}. "
+                f"Reason codes: {', '.join(result.get('reason_codes', []))}."
+            ),
+            "explanation": None,
+            "recommended_action": (
+                "Review transaction signals and account history. "
+                "If fraud confirmed, freeze account and file STR with FIU-IND."
+            ),
+            "alert_ids": [alert_id],
+            "transaction_ids": [pre_id],
+            "primary_account": req.from_account,
+            "evidence": {
+                "behavioral_analysis": {
+                    "baseline_avg_amount": 0,
+                    "current_amount": int(req.amount),
+                    "deviation": float(result.get("amount_anomaly", 0)),
+                    "usual_time_range": "09:00-21:00 IST",
+                    "transaction_time": datetime.now(timezone.utc).strftime("%H:%M IST"),
+                    "time_anomaly": bool(result.get("time_anomaly", 0) > 30),
+                    "usual_locations": [],
+                    "transaction_location": req.geo_location or "",
+                },
+                "device_analysis": {
+                    "known_device": req.device_known,
+                    "device_id": req.device_id or "unknown",
+                    "device_type": "Mobile" if req.channel == "mobile" else "Desktop",
+                    "os": "Unknown",
+                    "ip_address": req.ip_address or "",
+                    "ip_risk": "high" if req.ip_address and req.ip_address.startswith("185.") else "low",
+                    "geo_location": req.geo_location or "",
+                },
+                "network_analysis": {
+                    "circular_transfers": bool(result.get("graph_risk", 0) > 50),
+                    "hop_count": 1,
+                    "connected_suspicious_accounts": 0,
+                    "layering_detected": False,
+                },
+            },
+            "alerts": [],
+            "transactions": [],
+            "timeline": [
+                {
+                    "timestamp": scored_at,
+                    "event_type": "case_opened",
+                    "description": f"Case auto-opened from pre-transaction scoring (score {score}/100)",
+                    "actor": "System",
+                    "metadata": {"pre_txn_id": pre_id, "decision": result["decision"]},
+                }
+            ],
+            "similar_cases": [],
+            "notes": [],
+        }
+        await insert_case(case)
+
+    return alert_id, case_id
 
 
 @router.post("/score")
@@ -80,35 +219,13 @@ async def score_pre_transaction(req: PreTxnRequest):
         },
     )
 
-    # Generate AI explanation for high-risk transactions
-    explanation = None
-    if result["score"] >= 30:
-        alert_data = {
-            "id": pre_id,
-            "alert_type": "pre_transaction_scoring",
-            "title": f"Pre-transaction risk score {result['score']:.0f} — {result['decision'].upper()}",
-            "account_name": req.from_account,
-            "account_id": req.from_account,
-            "amount": req.amount,
-            "currency": req.currency,
-            "risk_score": result["score"],
-            "severity": "critical" if result["score"] >= 80 else "high" if result["score"] >= 60 else "medium",
-            "description": (
-                f"Real-time scoring: {req.from_account} → {req.to_account}"
-                f" | ₹{req.amount:,.0f} | {req.txn_type}"
-            ),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "decision": result["decision"],
-            "reason_codes": result["reason_codes"],
-            "amount_anomaly": result["amount_anomaly"],
-            "behavioral_mismatch": result["behavioral_mismatch"],
-            "device_mismatch": result["device_mismatch"],
-            "time_anomaly": result["time_anomaly"],
-            "beneficiary_risk": result["beneficiary_risk"],
-            "graph_risk": result["graph_risk"],
-        }
-        explanation = generate_alert_explanation(alert_data)
+    scored_at = datetime.now(timezone.utc).isoformat()
 
+    # Auto-generate alert + case for high-risk decisions (score ≥ 50)
+    alert_id, case_id = await _auto_generate_alert_and_case(pre_id, req, result, scored_at)
+
+    # AI explanation is omitted from the scoring response for speed.
+    # Fetch it on-demand via GET /transactions/{pre_id}/explain
     return {
         "pre_txn_id": pre_id,
         "from_account": req.from_account,
@@ -124,9 +241,42 @@ async def score_pre_transaction(req: PreTxnRequest):
         "time_anomaly": result["time_anomaly"],
         "beneficiary_risk": result["beneficiary_risk"],
         "graph_risk": result["graph_risk"],
-        "explanation": explanation,
-        "scored_at": datetime.now(timezone.utc).isoformat(),
+        "explanation": None,
+        "alert_id": alert_id,
+        "case_id": case_id,
+        "scored_at": scored_at,
     }
+
+
+@router.get("/score/{pre_id}/explain")
+async def explain_pre_transaction(pre_id: str):
+    """Fetch AI explanation for a pre-transaction score. Slower — calls OpenAI."""
+    item = await get_pre_txn(pre_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    alert_data = {
+        "id": pre_id,
+        "alert_type": "pre_transaction_scoring",
+        "title": f"Pre-transaction risk score {item.get('risk_score', 0):.0f} — {item.get('decision', '').upper()}",
+        "account_name": item.get("from_account", ""),
+        "account_id": item.get("from_account", ""),
+        "amount": item.get("amount", 0),
+        "currency": item.get("currency", "INR"),
+        "risk_score": item.get("risk_score", 0),
+        "severity": "critical" if item.get("risk_score", 0) >= 80 else "high" if item.get("risk_score", 0) >= 60 else "medium",
+        "description": f"{item.get('txn_type')} via {item.get('channel')}",
+        "timestamp": item.get("created_at", ""),
+        "decision": item.get("decision", ""),
+        "reason_codes": item.get("risk_signals", {}).get("reason_codes", []),
+        "amount_anomaly": item.get("risk_signals", {}).get("amount_anomaly", 0),
+        "behavioral_mismatch": item.get("risk_signals", {}).get("amount_anomaly", 0),
+        "device_mismatch": item.get("risk_signals", {}).get("device_mismatch", False),
+        "time_anomaly": item.get("risk_signals", {}).get("time_anomaly", 0),
+        "beneficiary_risk": item.get("risk_signals", {}).get("beneficiary_risk", 0),
+        "graph_risk": item.get("risk_signals", {}).get("graph_risk", 0),
+    }
+    explanation = await asyncio.to_thread(generate_alert_explanation, alert_data)
+    return {"pre_txn_id": pre_id, "explanation": explanation}
 
 
 @router.get("/queue")
@@ -178,13 +328,12 @@ async def list_transactions(
 async def get_manual_review_list(limit: int = Query(50, le=200)):
     """Return all transactions pending manual analyst review (decision=manual_review, not resolved)."""
     items = await get_manual_review_queue(limit=limit)
-    # Enrich each item with AI suggestion
-    enriched = []
-    for item in items:
-        suggestion = generate_manual_review_suggestion(item)
-        enriched.append({**item, "ai_suggestion": suggestion})
+    # Enrich each item with AI suggestion — run all LLM calls in parallel
+    suggestions = await asyncio.gather(
+        *[asyncio.to_thread(generate_manual_review_suggestion, item) for item in items]
+    )
+    enriched = [{**item, "ai_suggestion": suggestion} for item, suggestion in zip(items, suggestions)]
     return {"manual_review": enriched, "total": len(enriched)}
-
 
 @router.get("/manual-review/{pre_id}")
 async def get_manual_review_item(pre_id: str):

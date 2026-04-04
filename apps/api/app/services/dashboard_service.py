@@ -5,7 +5,6 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 from app.core.data_loader import load_executive_metrics
-from app.db import connection
 from app.schemas.dashboard import (
     AnalystDashboardResponse,
     ComplianceSummary,
@@ -22,40 +21,21 @@ from app.schemas.dashboard import (
 # ---------------------------------------------------------------------------
 
 async def _fetch_all_alerts() -> list[dict]:
-    """Return all alerts from DB (or JSON fallback)."""
-    if connection.PG_AVAILABLE:
-        pool = connection.get_pool()
-        async with pool.acquire() as conn:
-            rows = await conn.fetch("SELECT data FROM alerts ORDER BY created_at DESC")
-        return [json.loads(r["data"]) for r in rows]
-    from app.core.data_loader import load_alerts
-    return load_alerts()
+    """Return all alerts from runtime store + PG (no static JSON fallback)."""
+    from app.db.repositories.alert_repo import find_alerts
+    return await find_alerts(limit=500)
 
 
 async def _fetch_all_cases() -> list[dict]:
-    """Return all cases from DB (or JSON fallback)."""
-    if connection.PG_AVAILABLE:
-        pool = connection.get_pool()
-        async with pool.acquire() as conn:
-            rows = await conn.fetch("SELECT data FROM cases")
-        return [json.loads(r["data"]) for r in rows]
-    from app.core.data_loader import load_cases
-    return load_cases()
+    """Return all cases from runtime store + PG (no static JSON fallback)."""
+    from app.db.repositories.case_repo import find_cases
+    return await find_cases(limit=500)
 
 
 async def _fetch_flagged_transactions() -> list[dict]:
-    """Return all flagged/fraud transactions from DB (or JSON fallback)."""
-    if connection.PG_AVAILABLE:
-        pool = connection.get_pool()
-        async with pool.acquire() as conn:
-            rows = await conn.fetch(
-                "SELECT id, from_account, to_account, amount, currency, txn_type, "
-                "channel, status, risk_score, flagged, ts FROM transactions WHERE flagged = TRUE"
-            )
-        return [dict(r) for r in rows]
-    from app.core.data_loader import load_transactions
-    txns = load_transactions()
-    return [t for t in txns if t.get("flagged")]
+    """Return flagged transactions from PG (no static JSON fallback)."""
+    from app.db.repositories.transaction_repo import find_transactions
+    return await find_transactions(flagged=True, limit=500)
 
 
 # ---------------------------------------------------------------------------
@@ -64,16 +44,26 @@ async def _fetch_flagged_transactions() -> list[dict]:
 
 async def get_analyst_dashboard() -> AnalystDashboardResponse:
     alerts = await _fetch_all_alerts()
-    today = datetime.now(timezone.utc).date()
+    now_utc = datetime.now(timezone.utc)
+    today_utc = now_utc.date()
 
     total_alerts = len(alerts)
     critical_alerts = sum(1 for a in alerts if a.get("severity") == "critical")
-    pending_review = sum(1 for a in alerts if a.get("status") in ("new", "open"))
-    resolved_today = sum(
-        1 for a in alerts
-        if a.get("status") == "resolved"
-        and a.get("timestamp", "")[:10] == str(today)
-    )
+    # "pending" = any active non-terminal status
+    pending_statuses = {"new", "open", "investigating", "pending"}
+    pending_review = sum(1 for a in alerts if a.get("status") in pending_statuses)
+    # resolved today — compare in local calendar date of the timestamp
+    resolved_today = 0
+    for a in alerts:
+        if a.get("status") == "resolved":
+            try:
+                ts = datetime.fromisoformat(a["timestamp"])
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                if ts.astimezone(timezone.utc).date() == today_utc:
+                    resolved_today += 1
+            except (KeyError, ValueError):
+                pass
 
     scores = [a.get("risk_score", 0) for a in alerts]
     avg_score = sum(scores) / len(scores) if scores else 0
@@ -96,17 +86,23 @@ async def get_analyst_dashboard() -> AnalystDashboardResponse:
             buckets["81-100"] += 1
     score_distribution = [ScoreDistribution(range=k, count=v) for k, v in buckets.items()]
 
-    # Daily trend: last 14 days
+    # Daily trend: last 14 days — normalise timestamps to UTC date before bucketing
     daily: dict[str, dict] = {}
     for d in range(13, -1, -1):
-        day = str((datetime.now(timezone.utc) - timedelta(days=d)).date())
+        day = str((now_utc - timedelta(days=d)).date())
         daily[day] = {"alerts": 0, "resolved": 0}
     for a in alerts:
-        ts = a.get("timestamp", "")[:10]
-        if ts in daily:
-            daily[ts]["alerts"] += 1
+        try:
+            ts = datetime.fromisoformat(a.get("timestamp", ""))
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            ts_date = str(ts.astimezone(timezone.utc).date())
+        except (ValueError, TypeError):
+            ts_date = ""
+        if ts_date in daily:
+            daily[ts_date]["alerts"] += 1
             if a.get("status") == "resolved":
-                daily[ts]["resolved"] += 1
+                daily[ts_date]["resolved"] += 1
     daily_trend = [
         DailyTrend(date=d, alerts=v["alerts"], resolved=v["resolved"])
         for d, v in daily.items()

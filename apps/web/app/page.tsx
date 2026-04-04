@@ -128,7 +128,7 @@ export default function HomePage() {
             { label: 'Use Cases', value: '34', sub: 'across 5 groups' },
             { label: 'API Endpoints', value: '12+', sub: 'REST API' },
             { label: 'Risk Signals', value: '5', sub: 'behavioral dimensions' },
-            { label: 'AI Model', value: 'GPT-4o-mini', sub: 'RAG + ChromaDB' },
+            { label: 'Intelligence', value: 'RAG + ChromaDB', sub: 'PostgreSQL' },
           ].map(s => (
             <div key={s.label} className="rounded-lg border bg-white px-4 py-3 text-center shadow-sm">
               <p className="text-xl font-bold text-primary">{s.value}</p>

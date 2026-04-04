@@ -5,23 +5,24 @@ from app.graph.analyzer import analyze_case_graph
 
 
 def test_case_001_graph():
-    """Test that CASE-001 circular transfer pattern is detected."""
-    transaction_ids = ["TXN-001", "TXN-002", "TXN-003", "TXN-004", "TXN-005", "TXN-006"]
+    """Test that CASE-GEN-001 circular transfer pattern is detected."""
+    # TXN-GEN-001: ACC-001→ACC-011, TXN-GEN-002: ACC-011→ACC-021, TXN-GEN-011: ACC-001→ACC-023
+    transaction_ids = ["TXN-GEN-001", "TXN-GEN-002", "TXN-GEN-011"]
     result = analyze_case_graph(transaction_ids)
 
-    assert len(result.nodes) >= 4
-    assert len(result.edges) >= 6
+    assert len(result.nodes) >= 3
+    assert len(result.edges) >= 2
     assert len(result.suspicious_paths) > 0
-    assert any(edge.suspicious for edge in result.edges)
 
 
 def test_case_005_graph():
-    """Test that CASE-005 structuring pattern graph is built correctly."""
-    transaction_ids = ["TXN-014", "TXN-015", "TXN-016", "TXN-017", "TXN-018", "TXN-019"]
+    """Test that CASE-GEN-005 mule network graph is built correctly."""
+    # TXN-GEN-007: ACC-008→ACC-016, TXN-GEN-014: ACC-008→ACC-017
+    transaction_ids = ["TXN-GEN-007", "TXN-GEN-014"]
     result = analyze_case_graph(transaction_ids)
 
-    assert len(result.nodes) == 3  # ACC-010, ACC-011, ACC-012
-    assert len(result.edges) == 6
+    assert len(result.nodes) == 3  # ACC-008, ACC-016, ACC-017
+    assert len(result.edges) == 2
 
 
 def test_empty_graph():

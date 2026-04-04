@@ -40,5 +40,460 @@
     "analyst_id": "demo",
     "notes": null,
     "timestamp": "2026-04-04T01:12:19.032618Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:39:48.634533Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:39:48.655546Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:39:59.176648Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:39:59.213712Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:39:59.361465Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:41:40.067366Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:41:40.081373Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:41:49.654078Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:41:49.663076Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:41:49.673088Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:56:14.561231Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:56:14.571235Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:56:14.581750Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:56:14.595750Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T03:56:24.515777Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T04:11:03.169421Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T04:12:18.103669Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T04:26:24.633492Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:31:40.732791Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:31:48.042508Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:31:53.395669Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:31:53.406670Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:31:53.417668Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T04:34:37.047142Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T04:39:02.782193Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T04:40:14.345811Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T04:43:13.316254Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:44:01.419782Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:44:08.387482Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:44:08.409003Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:44:08.423001Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:44:08.442006Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T04:45:23.422033Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:46:00.513082Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:46:00.535599Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:46:06.635169Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:46:06.651165Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T04:46:06.672695Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T04:51:20.451459Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T04:52:58.610043Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T05:02:33.068128Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T05:08:07.318735Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T05:14:22.822635Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T05:14:47.548083Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T05:15:05.801440Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T05:15:27.391151Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T05:16:30.808283Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T05:18:11.043506Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T05:18:24.754700Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T05:18:24.767735Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T05:18:30.179949Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T05:18:30.260540Z"
+  },
+  {
+    "case_id": "CASE-GEN-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T05:48:28.671087Z"
+  },
+  {
+    "case_id": "CASE-GEN-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T05:48:28.691086Z"
+  },
+  {
+    "case_id": "CASE-GEN-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T05:48:28.709701Z"
+  },
+  {
+    "case_id": "CASE-GEN-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T05:48:28.721927Z"
+  },
+  {
+    "case_id": "CASE-GEN-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T05:48:28.738040Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T05:52:58.483871Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T05:56:39.130037Z"
+  },
+  {
+    "case_id": "CASE-001",
+    "confirmed_fraud": true,
+    "analyst_id": "analyst-1",
+    "notes": "Confirmed circular fund flow pattern",
+    "timestamp": "2026-04-04T05:57:39.806976Z"
+  },
+  {
+    "case_id": "CASE-GEN-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T06:03:47.234635Z"
+  },
+  {
+    "case_id": "CASE-GEN-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T06:03:47.260685Z"
+  },
+  {
+    "case_id": "CASE-GEN-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T06:03:52.478470Z"
+  },
+  {
+    "case_id": "CASE-GEN-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T06:03:52.497027Z"
+  },
+  {
+    "case_id": "CASE-GEN-005",
+    "confirmed_fraud": true,
+    "analyst_id": "demo",
+    "notes": null,
+    "timestamp": "2026-04-04T06:03:52.517615Z"
   }
 ]

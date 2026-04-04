@@ -1,5 +1,6 @@
 """Report routes."""
 
+import asyncio
 import io
 
 from fastapi import APIRouter, HTTPException
@@ -19,7 +20,7 @@ async def download_report_pdf(case_id: str):
     if case is None:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
 
-    pdf_bytes, metadata = generate_report_pdf(case.model_dump())
+    pdf_bytes, metadata = await asyncio.to_thread(generate_report_pdf, case.model_dump())
 
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
@@ -39,5 +40,5 @@ async def get_report_metadata(case_id: str):
     if case is None:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
 
-    _, metadata = generate_report_pdf(case.model_dump())
+    _, metadata = await asyncio.to_thread(generate_report_pdf, case.model_dump())
     return ReportMetadata(**metadata)

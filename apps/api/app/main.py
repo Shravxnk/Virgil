@@ -15,34 +15,104 @@ from app.config import get_settings
 
 
 async def _seed_pg_sample_data() -> None:
-    """If PostgreSQL is available but alerts/cases tables are empty, seed from JSON sample files."""
+    """Seed both PostgreSQL and the runtime store from the dynamic data generator."""
     import json
+    from datetime import datetime, timezone
     from app.db import connection
-    from app.core.data_loader import load_alerts, load_cases
+    from app.core.data_generator import generate_seed_data
+    from app.db.repositories.runtime_store import store_alert, store_case
+
+    seed = generate_seed_data()
+    alerts = seed["alerts"]
+    cases = seed["cases"]
+    txns = seed["transactions"]
+
+    # Always populate runtime store so data is available even without PG
+    for a in alerts:
+        store_alert(a)
+    for c in cases:
+        store_case(c)
+
     if not connection.PG_AVAILABLE:
+        print(f"[Chakravyuh] PG unavailable — seeded {len(alerts)} alerts, {len(cases)} cases into runtime store.")
         return
+
     pool = connection.get_pool()
     async with pool.acquire() as conn:
-        alerts = load_alerts()
-        for a in alerts:
-            await conn.execute(
-                "INSERT INTO alerts (id, data) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING",
-                a["id"], json.dumps(a),
-            )
-        cases = load_cases()
-        for c in cases:
-            await conn.execute(
-                "INSERT INTO cases (id, data) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING",
-                c["id"], json.dumps(c),
-            )
-        print(f"[Chakravyuh] Sample data ensured: {len(alerts)} alerts, {len(cases)} cases.")
+        alert_count = await conn.fetchval("SELECT COUNT(*) FROM alerts")
+        case_count = await conn.fetchval("SELECT COUNT(*) FROM cases")
+        txn_count = await conn.fetchval("SELECT COUNT(*) FROM transactions")
+
+        if alert_count == 0:
+            for a in alerts:
+                await conn.execute(
+                    "INSERT INTO alerts (id, data) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING",
+                    a["id"], json.dumps(a),
+                )
+            print(f"[Chakravyuh] Seeded {len(alerts)} alerts into PostgreSQL.")
+
+        if case_count == 0:
+            for c in cases:
+                await conn.execute(
+                    "INSERT INTO cases (id, data) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING",
+                    c["id"], json.dumps(c),
+                )
+            print(f"[Chakravyuh] Seeded {len(cases)} cases into PostgreSQL.")
+
+        if txn_count == 0:
+            for t in txns:
+                _ts_raw = t.get("timestamp") or t.get("ts")
+                try:
+                    ts_val = datetime.fromisoformat(_ts_raw) if _ts_raw else datetime.now(tz=timezone.utc)
+                except (ValueError, TypeError):
+                    ts_val = datetime.now(tz=timezone.utc)
+                await conn.execute(
+                    """INSERT INTO transactions
+                       (id, from_account, from_name, to_account, to_name, amount, currency,
+                        txn_type, channel, status, risk_score, flagged, case_id, post_analysis, ts)
+                       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+                       ON CONFLICT (id) DO NOTHING""",
+                    t["id"],
+                    t.get("from_account", ""),
+                    t.get("from_name", ""),
+                    t.get("to_account", ""),
+                    t.get("to_name", ""),
+                    int(t.get("amount", 0)),
+                    t.get("currency", "INR"),
+                    t.get("txn_type", "NEFT"),
+                    t.get("channel", "netbanking"),
+                    t.get("status", "completed"),
+                    int(t.get("risk_score", 0)),
+                    bool(t.get("flagged", False)),
+                    t.get("case_id"),
+                    json.dumps(t.get("post_analysis") or {}),
+                    ts_val,
+                )
+            print(f"[Chakravyuh] Seeded {len(txns)} transactions into PostgreSQL.")
+
+        if alert_count > 0 or case_count > 0 or txn_count > 0:
+            print(f"[Chakravyuh] PG already has data: {alert_count} alerts, {case_count} cases, {txn_count} txns. Runtime store topped up.")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: initialise MongoDB connection and seed vector collections."""
     settings = get_settings()
-    # PostgreSQL
+    # ① Always seed runtime store (works even without PostgreSQL)
+    try:
+        from app.core.data_generator import generate_seed_data
+        from app.db.repositories.runtime_store import store_alert, store_case, store_transaction
+        _seed = generate_seed_data()
+        for _a in _seed["alerts"]:
+            store_alert(_a)
+        for _c in _seed["cases"]:
+            store_case(_c)
+        for _t in _seed["transactions"]:
+            store_transaction(_t)
+        print(f"[Chakravyuh] Runtime store seeded: {len(_seed['alerts'])} alerts, {len(_seed['cases'])} cases, {len(_seed['transactions'])} txns.")
+    except Exception as _e:
+        print(f"[Chakravyuh] Runtime store seeding failed: {_e}")
+    # ② PostgreSQL (optional — failures do not affect runtime store)
     try:
         from app.db.connection import init_db
         await init_db(settings.db_host, settings.db_port, settings.db_name, settings.db_user, settings.db_password)

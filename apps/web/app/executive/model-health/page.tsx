@@ -102,7 +102,7 @@ export default function ModelHealthPage() {
             </div>
             <p className="text-sm text-muted-foreground">
               Rule-based behavioural scoring + graph analysis pipeline.
-              OpenAI GPT-4o mini powers explanation and report narration layers.
+              RAG + ChromaDB powers explanation and report narration layers.
               Last validated: <strong>15 Mar 2026</strong>.
             </p>
           </div>
@@ -231,7 +231,7 @@ export default function ModelHealthPage() {
                 </li>
                 <li className="flex gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  OpenAI GPT-4o mini for explanation, narrative drafting, and alert summarisation
+                  RAG + ChromaDB for explanation, narrative drafting, and alert summarisation
                 </li>
                 <li className="flex gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />

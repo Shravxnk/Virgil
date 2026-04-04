@@ -1,5 +1,7 @@
 """Graph routes."""
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException
 
 from app.graph.analyzer import analyze_case_graph
@@ -16,5 +18,5 @@ async def get_case_graph(case_id: str):
     if case is None:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
 
-    graph_data = analyze_case_graph(case.transaction_ids)
+    graph_data = await asyncio.to_thread(analyze_case_graph, case.transaction_ids)
     return graph_data

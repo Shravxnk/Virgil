@@ -22,6 +22,24 @@ def _parse_usual_hours(time_range: str) -> tuple[int, int]:
         return 9, 17
 
 
+def _profile_baseline_avg(profile: dict) -> float:
+    """Return a sensible average transaction amount from a profile dict."""
+    if "avg_transaction_amount" in profile:
+        return float(profile["avg_transaction_amount"])
+    # Derive from monthly debit / 30 as a daily proxy
+    monthly = profile.get("monthly_avg_debit") or profile.get("monthly_avg_credit") or 0
+    return float(monthly) / 30 if monthly else 100_000.0
+
+
+def _profile_usual_hours(profile: dict) -> tuple[int, int]:
+    """Return (start_hour, end_hour) from a profile dict."""
+    if "usual_transaction_times" in profile:
+        return _parse_usual_hours(profile["usual_transaction_times"])
+    start = int(profile.get("typical_hours_start", 9))
+    end = int(profile.get("typical_hours_end", 17))
+    return start, end
+
+
 def _check_graph_signals(account_id: str, transactions: list[dict]) -> dict:
     """Quick graph signal check for an account."""
     related = [
@@ -80,11 +98,9 @@ def score_transaction(transaction_id: str) -> RiskScoreResponse:
     sender_devices = get_devices_for_account(txn["from_account"])
     all_transactions = load_transactions()
 
-    baseline_avg = sender_profile["avg_transaction_amount"] if sender_profile else 0
+    baseline_avg = _profile_baseline_avg(sender_profile) if sender_profile else 0
     usual_start, usual_end = (
-        _parse_usual_hours(sender_profile["usual_transaction_times"])
-        if sender_profile
-        else (9, 17)
+        _profile_usual_hours(sender_profile) if sender_profile else (9, 17)
     )
 
     txn_time = datetime.fromisoformat(txn["timestamp"].replace("Z", "+00:00"))
@@ -163,11 +179,9 @@ def score_transaction_params(
     receiver_profile = get_profile_by_account(to_account)
     all_transactions = load_transactions()
 
-    baseline_avg = sender_profile["avg_transaction_amount"] if sender_profile else 0
+    baseline_avg = _profile_baseline_avg(sender_profile) if sender_profile else 0
     usual_start, usual_end = (
-        _parse_usual_hours(sender_profile["usual_transaction_times"])
-        if sender_profile
-        else (9, 17)
+        _profile_usual_hours(sender_profile) if sender_profile else (9, 17)
     )
 
     is_first_time = True

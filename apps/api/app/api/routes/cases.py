@@ -1,5 +1,7 @@
 """Case routes."""
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException, Query
 
 from app.llm.explainer import generate_case_summary
@@ -21,12 +23,18 @@ async def list_cases(
 
 @router.get("/{case_id}", response_model=CaseDetailResponse)
 async def get_case(case_id: str):
-    """Get detailed case information including evidence, timeline, and similar cases."""
+    """Get detailed case information. Explanation omitted for speed — use /explain endpoint."""
     case = await get_case_detail(case_id)
     if case is None:
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
-
-    if case.explanation is None:
-        case.explanation = generate_case_summary(case.model_dump())
-
     return case
+
+
+@router.get("/{case_id}/explain")
+async def explain_case(case_id: str):
+    """Generate an AI-powered investigation summary for a case. Slower — calls OpenAI."""
+    case = await get_case_detail(case_id)
+    if case is None:
+        raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
+    explanation = await asyncio.to_thread(generate_case_summary, case.model_dump())
+    return {"case_id": case_id, "explanation": explanation}

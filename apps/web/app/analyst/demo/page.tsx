@@ -165,10 +165,10 @@ const USE_CASES: UseCase[] = [
     description: 'Circular fund flow is the most classic money laundering pattern. The NetworkX graph engine identifies 3-hop RTGS cycles: Meridian Holdings (SBI) sent ₹1.85Cr to Aarav Traders (HDFC), which forwarded to Sunrise Finance (UCO Bank), which returned ₹1.79Cr to Meridian Holdings — completing the circle within 36 hours. A 2.97% extraction spread (₹5.5L) is siphoned off each cycle. This matches PMLA Section 3 layering typology. Alert ALT-001 is the first hop detection; the full case is CASE-001.',
     persona: '🔍 Graph engine flags ALT-001: Meridian Holdings India Pvt Ltd (SBI 30765432189) → Aarav Traders (HDFC 50100421836529) → Sunrise Finance (UCO 0230014781923) → back to Meridian. ₹1.85Cr cycled, ₹5.5L extracted.',
     expectedDecision: 'manual_review',
-    apiEndpoint: 'GET /api/alerts/ALT-001',
+    apiEndpoint: 'GET /api/alerts/ALT-GEN-001',
     navigateTo: '/analyst/alerts', navigateLabel: 'Open Alert Inbox',
-    apiMode: 'alert', alertId: 'ALT-001',
-    whatToLookFor: 'Alert type: circular_transfer. Risk score: 92. Severity: CRITICAL. Case linked: CASE-001.',
+    apiMode: 'alert', alertId: 'ALT-GEN-001',
+    whatToLookFor: 'Alert type: circular_fund_flow. Risk score: 92. Severity: CRITICAL. Case linked: CASE-GEN-001.',
   },
   {
     id: 'UC-11', group: 'B',
@@ -176,10 +176,10 @@ const USE_CASES: UseCase[] = [
     description: 'This alert captures the return leg of the same circular scheme as UC-10. Alert ALT-002 fires when Sunrise Finance (UCO Bank) completes the round-trip by sending ₹1.79Cr back to Meridian Holdings, confirming the circular nature with high confidence. The combination of ALT-001 and ALT-002 together confirm a fully circular layering operation. Both alerts are linked to CASE-001, allowing the analyst to see the complete fund flow in a single investigation context.',
     persona: '🔍 Graph engine confirms round-trip: Sunrise Finance Pvt Ltd (UCO 0230014781923) → Meridian Holdings (SBI 30765432189). ₹1.79Cr return at 18:50 IST — 4.5 hours after the initial transfer. Circular transfer confirmed.',
     expectedDecision: 'manual_review',
-    apiEndpoint: 'GET /api/alerts/ALT-002',
+    apiEndpoint: 'GET /api/alerts/ALT-GEN-006',
     navigateTo: '/analyst/alerts', navigateLabel: 'Open Alert Inbox',
-    apiMode: 'alert', alertId: 'ALT-002',
-    whatToLookFor: 'Alert type: circular_transfer_return. Risk score: 95. Both ALT-001 and ALT-002 link to CASE-001.',
+    apiMode: 'alert', alertId: 'ALT-GEN-006',
+    whatToLookFor: 'Alert type: high_velocity_transactions. Risk score: 79. Both alerts link to CASE-GEN-001.',
   },
   {
     id: 'UC-12', group: 'B',
@@ -187,10 +187,10 @@ const USE_CASES: UseCase[] = [
     description: 'ALT-003 represents a confirmed Account Takeover pattern. Priya Sharma\'s NRO account at Axis Bank initiated a ₹43.5L NEFT at 03:12 IST — 97x above her baseline. The initiating device DEV-0089 is completely absent from the registered device registry. The IP 49.36.212.87 (Jio, geo-located to Kolkata) does not match the account holder\'s registered city (Delhi). The beneficiary account 0462002198765432 (Vijay Kumar, PNB Kolkata) was opened only 12 days ago — a classic mule account setup. All signals combine for a risk score of 97/100.',
     persona: '🔍 Axis Bank NRO account 917021847362019 (Priya Sharma, Delhi) — ₹43.5L NEFT at 03:12 IST to PNB Kolkata mule account, unknown device DEV-0089, foreign IP, beneficiary opened 12 days ago.',
     expectedDecision: 'block',
-    apiEndpoint: 'GET /api/alerts/ALT-003',
+    apiEndpoint: 'GET /api/alerts/ALT-GEN-002',
     navigateTo: '/analyst/alerts', navigateLabel: 'Open Alert Inbox',
-    apiMode: 'alert', alertId: 'ALT-003',
-    whatToLookFor: 'Alert type: account_takeover. Risk score: 97. All 5 ATO indicators present simultaneously.',
+    apiMode: 'alert', alertId: 'ALT-GEN-002',
+    whatToLookFor: 'Alert type: account_takeover. Risk score: 84. Severity: CRITICAL. All ATO indicators present.',
   },
   {
     id: 'UC-13', group: 'B',
@@ -198,10 +198,10 @@ const USE_CASES: UseCase[] = [
     description: 'Structuring is the practice of splitting large transactions into amounts just below the regulatory reporting threshold (₹10 lakh in India) to avoid FIU-IND STR filing obligations. ALT-005 flags 6 transfers of ₹98,000 each (just below ₹1L) from Sterling Capital\'s current account to Suyash Sawant\'s savings account over 48 hours. The total transfer is ₹5.88L — if done as a single transfer it might not cross the ₹10L STR threshold, but the pattern itself is a PMLA Section 3 red flag indicator recognized by FIU-IND.',
     persona: '🔍 Sterling Capital Ltd (Kotak 1234567890123) → Suyash Sawant (HDFC 9876543210987): 6 × ₹98,000 IMPS over 48 hours. Each just below ₹1L threshold. Total: ₹5.88L. Structuring pattern confirmed.',
     expectedDecision: 'manual_review',
-    apiEndpoint: 'GET /api/alerts/ALT-005',
+    apiEndpoint: 'GET /api/alerts/ALT-GEN-004',
     navigateTo: '/analyst/alerts', navigateLabel: 'Open Alert Inbox',
-    apiMode: 'alert', alertId: 'ALT-005',
-    whatToLookFor: 'Alert type: structuring. Multiple transactions just below threshold. PMLA Section 3 indicator.',
+    apiMode: 'alert', alertId: 'ALT-GEN-004',
+    whatToLookFor: 'Alert type: structuring_large_amount. Risk score: 81. PMLA Section 3 indicator. Case: CASE-GEN-004.',
   },
   {
     id: 'UC-14', group: 'B',
@@ -209,10 +209,10 @@ const USE_CASES: UseCase[] = [
     description: 'A dormant account (no activity for 12+ months) suddenly reactivating with high-value inbound transfers is a textbook mule account activation pattern. Attackers acquire dormant accounts from willing participants or via identity fraud, then use them as transit accounts to layer dirty money. CASE-001 spans this pattern — the Meridian Holdings → Aarav Traders layering chain involves accounts that had been dormant before the scheme started, suggesting the chain was pre-arranged for this purpose.',
     persona: '🔍 CASE-001 investigation: Aarav Traders (HDFC 50100421836529) last active 14 months ago. Suddenly receives ₹1.85Cr RTGS inbound and immediately forwards ₹1.79Cr onward within 4 hours. Zero prior legitimate business transactions.',
     expectedDecision: 'manual_review',
-    apiEndpoint: 'GET /api/cases/CASE-001',
+    apiEndpoint: 'GET /api/cases/CASE-GEN-001',
     navigateTo: '/analyst/cases', navigateLabel: 'Open Cases',
-    apiMode: 'case', caseId: 'CASE-001',
-    whatToLookFor: 'CASE-001 status: investigating. Circular transfers: true. Hop count: 3. Linked alerts: ALT-001, ALT-002.',
+    apiMode: 'case', caseId: 'CASE-GEN-001',
+    whatToLookFor: 'CASE-GEN-001 status: investigating. Circular fund flow. Total exposure: ₹1.85Cr. Linked alerts: ALT-GEN-001.',
   },
   {
     id: 'UC-15', group: 'B',
@@ -220,21 +220,21 @@ const USE_CASES: UseCase[] = [
     description: 'Synthetic identity fraud involves creating fake or partially-fabricated identities to open bank accounts used for financial crime. CASE-003 covers Horizon Ventures India Pvt Ltd (Kotak) — a company incorporated only 6 weeks before the suspicious transactions, with no legitimate business activity, whose directors have no credit history, and whose PAN details don\'t match MCA records. The transaction chain traces through 4 hops to merge with the Meridian Holdings circular flow from CASE-001, suggesting a coordinated scheme.',
     persona: '🔍 CASE-003: Horizon Ventures India Pvt Ltd (Kotak 1634087654321) — incorporated 6 weeks ago, zero legitimate transactions, directors PAN mismatch. Received ₹2.3Cr over 5 days from 3 different accounts, immediately forwarded to 4-hop chain.',
     expectedDecision: 'manual_review',
-    apiEndpoint: 'GET /api/cases/CASE-003',
+    apiEndpoint: 'GET /api/cases/CASE-GEN-003',
     navigateTo: '/analyst/cases', navigateLabel: 'Open Cases',
-    apiMode: 'case', caseId: 'CASE-003',
-    whatToLookFor: 'CASE-003 status: investigating. synthetic_identity alert type. Linked to broader scheme.',
+    apiMode: 'case', caseId: 'CASE-GEN-003',
+    whatToLookFor: 'CASE-GEN-003 status: investigating. Synthetic identity. Linked to broader scheme.',
   },
   {
     id: 'UC-16', group: 'B',
     title: 'AI-Generated Alert Explanation',
-    description: 'When an analyst opens an alert, they can request an AI-generated briefing from Chakravyuh\'s LLM layer (gpt-4o-mini). The system loads the full alert context — risk score, reason codes, account details, amount, device analysis, network graph signals — and sends it to the model with a structured prompt instructing it to act as a Senior Fraud Analyst at FIU-IND. The result is a professional investigation briefing in plain English: what triggered the alert, why it is suspicious, what the analyst must do next, and applicable PMLA/RBI obligations.',
-    persona: '🧑‍💼 Analyst Kavya Rao opens ALT-001 (Meridian Holdings circular transfer, 92/100) and asks "Why was this flagged?". GPT-4o-mini responds with a full FIU-analyst-style briefing in under 3 seconds.',
+    description: 'When an analyst opens an alert, they can request a RAG-powered briefing from Chakravyuh\'s explanation layer. The system loads the full alert context — risk score, reason codes, account details, amount, device analysis, network graph signals — and retrieves relevant context from ChromaDB + PostgreSQL before generating a professional investigation briefing in plain English: what triggered the alert, why it is suspicious, what the analyst must do next, and applicable PMLA/RBI obligations.',
+    persona: '🧑‍💼 Analyst Kavya Rao opens ALT-001 (Meridian Holdings circular transfer, 92/100) and asks "Why was this flagged?". RAG + ChromaDB returns a full FIU-analyst-style briefing in under 3 seconds.',
     expectedDecision: 'manual_review',
-    apiEndpoint: 'GET /api/alerts/ALT-001/explain',
+    apiEndpoint: 'GET /api/alerts/ALT-GEN-001/explain',
     navigateTo: '/analyst/alerts', navigateLabel: 'Open Alert Inbox',
-    apiMode: 'explain', alertId: 'ALT-001',
-    whatToLookFor: 'Full LLM explanation text. If OpenAI key not configured, system returns template fallback.',
+    apiMode: 'explain', alertId: 'ALT-GEN-001',
+    whatToLookFor: 'Full explanation text with PMLA references. If not configured, system returns template fallback.',
   },
   {
     id: 'UC-17', group: 'B',
@@ -242,10 +242,10 @@ const USE_CASES: UseCase[] = [
     description: 'Once a case is confirmed as fraud, the analyst must assemble an evidence package that is legally defensible in court or for STR submission to FIU-IND. Chakravyuh\'s evidence metadata includes: alert IDs with timestamps, transaction IDs with UTR references, device forensics, network graph nodes/edges, behavioral deviation analysis, and a SHA-256 chain-of-custody hash. The hash ensures that evidence has not been tampered with between collection and submission to the Financial Intelligence Unit.',
     persona: '🧑‍💼 Analyst Rahul Mehta working CASE-005 (mule network, ₹4.1Cr, escalated). Building evidence package for STR filing: full alert chain ALT-007+ALT-008, SHA-256 hash, transaction IDs, and analyst notes.',
     expectedDecision: 'block',
-    apiEndpoint: 'GET /api/cases/CASE-005',
+    apiEndpoint: 'GET /api/cases/CASE-GEN-005',
     navigateTo: '/analyst/cases', navigateLabel: 'Open Cases',
-    apiMode: 'case', caseId: 'CASE-005',
-    whatToLookFor: 'CASE-005 evidence array, SHA-256 hash, linked alert IDs, timeline with timestamps.',
+    apiMode: 'case', caseId: 'CASE-GEN-005',
+    whatToLookFor: 'CASE-GEN-005 evidence array, SHA-256 hash, linked alert IDs, timeline with timestamps.',
   },
   {
     id: 'UC-18', group: 'B',
@@ -253,9 +253,9 @@ const USE_CASES: UseCase[] = [
     description: 'Under PMLA 2002, Indian banks must file Suspicious Transaction Reports (STRs) with FIU-IND within 7 working days of suspicion. Chakravyuh\'s ReportLab-powered PDF generator creates a SAR-quality compliance document for CASE-005: Section A (subject identification), Section B (nature of suspicious activity), Section C (typology indicators), Section D (risk assessment), and Section E (actions taken). The PDF includes the SHA-256 chain-of-custody hash on the cover page, ensuring legal admissibility.',
     persona: '🧑‍💼 Compliance Officer Deepika Sharma — filing STR for CASE-005 (confirmed mule network, ₹4.1Cr). PDF generated with full narrative, transaction graph, evidence hash. Submitted to FIU-IND via FINnet portal.',
     expectedDecision: 'block',
-    apiEndpoint: 'GET /api/report/CASE-005/pdf',
+    apiEndpoint: 'GET /api/report/CASE-GEN-005/pdf',
     navigateTo: '/analyst/cases', navigateLabel: 'Open Cases',
-    apiMode: 'report', caseId: 'CASE-005',
+    apiMode: 'report', caseId: 'CASE-GEN-005',
     whatToLookFor: 'PDF download triggered. Check HTTP response headers for X-Custody-Hash and X-Report-Id.',
   },
 
@@ -266,9 +266,9 @@ const USE_CASES: UseCase[] = [
     description: 'The analyst dashboard presents all open alerts ranked by risk score descending, so the most critical cases are always at the top. Each alert card shows: risk score, severity badge, alert type, account name, amount, and time elapsed since detection. Analysts can filter by severity (critical/high/medium/low) and status (new/open/investigating/resolved). This view corresponds to calling GET /api/alerts — the same endpoint that powers the live Alert Inbox page in the Analyst Console.',
     persona: '🧑‍💼 Analyst opens inbox — sees ALT-001 (92/100, CRITICAL, circular_transfer), ALT-003 (97/100, CRITICAL, account_takeover), ALT-007 (88/100, CRITICAL, mule_network) at the top.',
     expectedDecision: 'manual_review',
-    apiEndpoint: 'GET /api/alerts/ALT-001',
+    apiEndpoint: 'GET /api/alerts/ALT-GEN-001',
     navigateTo: '/analyst/alerts', navigateLabel: 'Open Alert Inbox',
-    apiMode: 'alert', alertId: 'ALT-001',
+    apiMode: 'alert', alertId: 'ALT-GEN-001',
     whatToLookFor: 'Alert count, severity distribution, risk_score. Open the Alert Inbox to see the full ranked list.',
   },
   {
@@ -277,10 +277,10 @@ const USE_CASES: UseCase[] = [
     description: 'When an analyst clicks into an alert, they see the full investigation context: behavioral analysis (baseline vs current amount, time anomaly flag), device analysis (known/unknown device, IP risk classification, geo-location), network analysis (circular transfers flag, hop count, connected suspicious accounts), the AI-generated LLM explanation, and the complete alert metadata. This maps to GET /api/alerts/{id} and returns all evidence arrays needed for a complete investigation decision.',
     persona: '🧑‍💼 Analyst Priya Kumari drills into ALT-004 (synthetic_identity, HDFC): sees behavioral deviation of 48x, unknown device, corporate IP, layering detected in network graph. Reviews full evidence for case escalation decision.',
     expectedDecision: 'manual_review',
-    apiEndpoint: 'GET /api/alerts/ALT-004',
+    apiEndpoint: 'GET /api/alerts/ALT-GEN-003',
     navigateTo: '/analyst/alerts', navigateLabel: 'Open Alert Inbox',
-    apiMode: 'alert', alertId: 'ALT-004',
-    whatToLookFor: 'ALT-004 type: synthetic_identity. Full behavioral, device, and network arrays visible.',
+    apiMode: 'alert', alertId: 'ALT-GEN-003',
+    whatToLookFor: 'ALT-GEN-003 type: synthetic_identity. Full behavioral, device, and network arrays visible.',
   },
   {
     id: 'UC-21', group: 'C',
@@ -435,13 +435,13 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-34', group: 'E',
     title: 'RAG-Powered LLM Explanation Engine',
-    description: 'Chakravyuh\'s LLM explanation layer uses Retrieval-Augmented Generation (RAG): ChromaDB retrieves the most relevant fraud knowledge (policies, historical cases, RBI guidelines) and passes it as context to GPT-4o-mini. This means the model\'s responses are grounded in Chakravyuh\'s specific knowledge base rather than generic LLM knowledge. The /explain endpoint for ALT-001 retrieves circular transfer policy context, layering typology documentation, and PMLA Section 3 guidance — then generates an expert-quality analyst briefing.',
-    persona: '🤖 GPT-4o-mini + ChromaDB RAG: ALT-001 context retrieved → circular transfer policy + PMLA Section 3 guidance → model generates: "The 3-hop RTGS cycle with 2.97% extraction spread meets the FIU-IND definition of layering under PMLA 2002..."',
+    description: 'Chakravyuh\'s explanation layer uses Retrieval-Augmented Generation (RAG): ChromaDB retrieves the most relevant fraud knowledge (policies, historical cases, RBI guidelines) and passes it as grounded context for the briefing. The /explain endpoint for ALT-001 retrieves circular transfer policy context, layering typology documentation, and PMLA Section 3 guidance — then generates an expert-quality analyst briefing backed by PostgreSQL data.',
+    persona: '🤖 RAG + ChromaDB: ALT-001 context retrieved → circular transfer policy + PMLA Section 3 guidance → generates: "The 3-hop RTGS cycle with 2.97% extraction spread meets the FIU-IND definition of layering under PMLA 2002..."',
     expectedDecision: 'approve',
-    apiEndpoint: 'GET /api/alerts/ALT-001/explain (RAG → GPT-4o-mini)',
+    apiEndpoint: 'GET /api/alerts/ALT-GEN-001/explain (RAG → ChromaDB)',
     navigateTo: '/analyst/alerts', navigateLabel: 'Open Alert Inbox',
-    apiMode: 'explain', alertId: 'ALT-001',
-    whatToLookFor: 'Full LLM explanation with PMLA references. API calls ChromaDB then GPT-4o-mini in sequence.',
+    apiMode: 'explain', alertId: 'ALT-GEN-001',
+    whatToLookFor: 'Full explanation with PMLA references. API calls ChromaDB + PostgreSQL in sequence.',
   },
 ];
 
@@ -505,7 +505,7 @@ async function callAPI(uc: UseCase): Promise<Partial<UCResult>> {
   }
   if (uc.apiMode === 'knowledge') {
     const [r1, r2] = await Promise.all([
-      fetch(`${API_BASE}/api/feedback/confirm`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ case_id: 'CASE-005', confirmed_fraud: true, analyst_id: 'demo' }) }),
+      fetch(`${API_BASE}/api/feedback/confirm`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ case_id: 'CASE-GEN-005', confirmed_fraud: true, analyst_id: 'demo' }) }),
       fetch(`${API_BASE}/api/knowledge/search`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: 'circular transfer layering mule account hawala structuring', top_k: 3 }) }),
     ]);
     const [fb, kb] = await Promise.all([r1.json(), r2.json()]);
@@ -535,15 +535,15 @@ function buildNarrative(uc: UseCase, r: Partial<UCResult>): { narrative: string;
         `6. Weighted sum → Risk Score: ${s}/100`,
         rc.length ? `7. Reason codes fired: ${rc.join(', ')}` : `7. No reason codes — all 5 signals within baseline thresholds`,
         `8. Threshold: <30=approve, 30–60=mfa, 60–80=manual_review, ≥80=block → ${dLabel}`,
-        s >= 30 ? `9. LLM briefing generated (gpt-4o-mini) and attached to response` : `9. Score <30 — no LLM call needed for low-risk approvals`,
+        s >= 30 ? `9. LLM briefing generated and attached to response` : `9. Score <30 — no LLM call needed for low-risk approvals`,
         `10. Logged to pre_txn_queue + response returned in ${r.durationMs}ms`,
       ],
     };
   }
   if (uc.apiMode === 'explain') {
     return {
-      narrative: r.explanation ? `GPT-4o-mini generated the following analyst briefing for alert ${uc.alertId}: "${r.explanation.slice(0, 200)}…"` : `Alert ${uc.alertId} loaded. LLM explainer invoked with full alert context.`,
-      steps: [`1. GET /api/alerts/${uc.alertId}/explain called`, `2. Alert context loaded: risk_score, reason_codes, behavioral signals, account details`, `3. ChromaDB retrieves relevant fraud policy context (RAG)`, `4. gpt-4o-mini generates analyst-quality briefing with PMLA references`, `5. Response returned in ${r.durationMs}ms`],
+      narrative: r.explanation ? `RAG + ChromaDB generated the following analyst briefing for alert ${uc.alertId}: "${r.explanation.slice(0, 200)}…"` : `Alert ${uc.alertId} loaded. RAG explainer invoked with full alert context.`,
+      steps: [`1. GET /api/alerts/${uc.alertId}/explain called`, `2. Alert context loaded: risk_score, reason_codes, behavioral signals, account details`, `3. ChromaDB retrieves relevant fraud policy context (RAG)`, `4. Explanation generated with PMLA references using RAG + PostgreSQL`, `5. Response returned in ${r.durationMs}ms`],
     };
   }
   if (uc.apiMode === 'alert') {
@@ -561,7 +561,7 @@ function buildNarrative(uc: UseCase, r: Partial<UCResult>): { narrative: string;
   if (uc.apiMode === 'report') {
     return {
       narrative: `FIU-IND compliance PDF report generated for ${uc.caseId}. ${r.rawSummary ?? ''}. Report contains SAR narrative sections A–E, full transaction graph summary, reason codes, analyst notes, and SHA-256 custody hash for legal admissibility.`,
-      steps: [`1. GET /api/report/${uc.caseId}/pdf called`, `2. Case confirmed_fraud status verified before generation`, `3. ReportLab PDF engine constructs Section A–E STR narrative`, `4. GPT-4o-mini generates SAR narrative text`, `5. SHA-256 hash computed over full PDF content`, `6. Binary PDF stream returned with Content-Disposition header in ${r.durationMs}ms`],
+      steps: [`1. GET /api/report/${uc.caseId}/pdf called`, `2. Case confirmed_fraud status verified before generation`, `3. ReportLab PDF engine constructs Section A–E STR narrative`, `4. RAG + ChromaDB generates SAR narrative text`, `5. SHA-256 hash computed over full PDF content`, `6. Binary PDF stream returned with Content-Disposition header in ${r.durationMs}ms`],
     };
   }
   if (uc.apiMode === 'dashboard') {
@@ -606,6 +606,7 @@ export default function DemoSimulatorPage() {
   const [customResult, setCustomResult] = useState<UCResult | null>(null);
   const [customRunning, setCustomRunning] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const setResult = useCallback((id: string, patch: Partial<UCResult>) => {
     setResults(prev => ({ ...prev, [id]: { ...(prev[id] ?? { state: 'idle' as const }), ...patch } as UCResult }));
@@ -640,14 +641,16 @@ export default function DemoSimulatorPage() {
   const generateScenario = async () => {
     if (!customForm.scenario_description.trim()) return;
     setGenerating(true);
+    setGenerateError(null);
     try {
       const res = await fetch(`${API_BASE}/api/scenarios/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: customForm.scenario_description }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`Backend returned HTTP ${res.status} — is the API running at ${API_BASE}?`);
       const data = await res.json();
+      if (data.error) throw new Error(data.error);
       setCustomForm(prev => ({
         ...prev,
         from_account: data.from_account ?? prev.from_account,
@@ -661,6 +664,8 @@ export default function DemoSimulatorPage() {
         ai_narrative: data.narrative ?? '',
       }));
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Generation failed — check the browser console for details';
+      setGenerateError(msg);
       console.error('Scenario generation failed', err);
     } finally {
       setGenerating(false);
@@ -974,12 +979,18 @@ export default function DemoSimulatorPage() {
                   {generating ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
                   {generating ? 'Generating…' : 'Generate with AI'}
                 </Button>
-                <p className="text-[11px] text-muted-foreground">GPT-4o-mini will convert your description into transaction parameters below</p>
+                <p className="text-[11px] text-muted-foreground">RAG + ChromaDB will convert your description into transaction parameters below</p>
               </div>
               {customForm.ai_narrative && (
                 <div className="rounded bg-primary/10 border border-primary/20 p-2.5">
                   <p className="text-[10px] font-semibold text-primary mb-1 flex items-center gap-1"><Brain className="h-3 w-3" />AI Scenario Analysis</p>
                   <p className="text-[11px] text-foreground leading-relaxed">{customForm.ai_narrative}</p>
+                </div>
+              )}
+              {generateError && (
+                <div className="rounded bg-red-50 border border-red-200 p-2.5">
+                  <p className="text-[10px] font-semibold text-red-600 mb-1 flex items-center gap-1"><XCircle className="h-3 w-3" />Generation failed</p>
+                  <p className="text-[11px] text-red-500">{generateError}</p>
                 </div>
               )}
             </div>

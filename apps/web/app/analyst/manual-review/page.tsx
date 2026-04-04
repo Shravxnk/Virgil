@@ -21,6 +21,8 @@ import {
   User2,
 } from 'lucide-react';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface RiskSignals {
@@ -517,7 +519,7 @@ export default function ManualReviewPage() {
         <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
           <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
           <p className="text-sm text-red-700 font-medium">{error}</p>
-          <p className="text-xs text-red-500 mt-1">Make sure the backend is running at localhost:8000</p>
+          <p className="text-xs text-red-500 mt-1">Make sure the backend is running at {API_BASE}</p>
         </div>
       )}
 
