@@ -1,9 +1,8 @@
 // app/analyst/pre-txn-analytics/page.tsx
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Header } from '@/components/layout/header';
-import { RefreshCw } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface PreTxnItem {
@@ -86,10 +85,7 @@ export default function PreTxnAnalyticsPage() {
   const [items, setItems] = useState<PreTxnItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(Date.now());
-  const [refreshIn, setRefreshIn] = useState(15);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const countRef = useRef(15);
 
   const loadData = useCallback(async () => {
     try {
@@ -98,8 +94,6 @@ export default function PreTxnAnalyticsPage() {
         ?? (Array.isArray(data) ? (data as PreTxnItem[]) : []);
       setItems(raw);
       setLastUpdated(Date.now());
-      countRef.current = 15;
-      setRefreshIn(15);
     } catch {
       // use stale data
     } finally {
@@ -109,14 +103,14 @@ export default function PreTxnAnalyticsPage() {
 
   useEffect(() => {
     loadData();
-    const tick = setInterval(() => {
-      countRef.current -= 1;
-      setRefreshIn(countRef.current);
-      if (countRef.current <= 0) {
-        loadData();
-      }
-    }, 1000);
-    return () => clearInterval(tick);
+    // Poll every 2 seconds for near-real-time updates
+    const tick = setInterval(loadData, 2000);
+    // Also refresh instantly when Transaction Scorer submits a new score
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'pretxn_scored') loadData();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => { clearInterval(tick); window.removeEventListener('storage', onStorage); };
   }, [loadData]);
 
   // treat all items as scored — API transactions don't have a `completed` flag
@@ -156,15 +150,16 @@ export default function PreTxnAnalyticsPage() {
       <Header title="Pre-Transaction Analytics" />
       <div style={{ background: 'var(--bg-void)', minHeight: 'calc(100vh - 52px)' }}>
 
-        {/* Auto-refresh banner */}
+        {/* Live indicator banner */}
         <div style={{ height: 32, display: 'flex', alignItems: 'center', gap: 8, padding: '0 24px', background: 'rgba(37,99,235,0.04)', borderBottom: '1px solid var(--border-dim)' }}>
-          <RefreshCw style={{ width: 12, height: 12, color: 'var(--text-muted)', animation: 'spin 3s linear infinite' }} />
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--risk-low)', boxShadow: '0 0 6px var(--risk-low)', flexShrink: 0, animation: 'pulse 1.5s ease-in-out infinite' }} />
           <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: 'var(--text-muted)' }}>
-            Auto-refreshing every 15s · Last updated {Math.floor((Date.now() - lastUpdated) / 1000)}s ago · Next in {refreshIn}s
+            LIVE · Auto-refreshing every 2s · Last updated {Math.floor((Date.now() - lastUpdated) / 1000)}s ago
           </span>
           <button onClick={() => loadData()} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: 'var(--brand-light)', padding: '0 4px' }}>
             Refresh now
           </button>
+          <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}`}</style>
         </div>
 
         {/* Stats — 2-tier command strip */}

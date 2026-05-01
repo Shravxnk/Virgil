@@ -211,6 +211,8 @@ export default function TransactionScorerPage() {
         channel: form.channel, device_known: form.device_known === 'true',
       });
       setResult(data as ScoringResult);
+      // Signal Pre-Txn Analytics page to refresh immediately
+      localStorage.setItem('pretxn_scored', String(Date.now()));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Scoring failed — ensure the API is running.');
     } finally { setLoading(false); }
