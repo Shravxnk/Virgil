@@ -14,6 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.responses import JSONResponse  # noqa: E402
 
 from app.api.routes import alerts, cases, compliance, dashboard, feedback, graph, reports, risk, scenarios, transactions  # noqa: E402
+from app.api.routes import accounts as accounts_router  # noqa: E402
+from app.api.routes import events as events_router  # noqa: E402
 from app.config import get_settings  # noqa: E402
 
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +28,7 @@ async def _seed_pg_sample_data() -> None:
     from datetime import datetime, timezone
     from app.db import connection
     from app.core.data_generator import generate_seed_data
+    from app.core.data_loader import load_user_profiles
     from app.db.repositories.runtime_store import store_alert, store_case
 
     seed = generate_seed_data()
@@ -45,9 +48,52 @@ async def _seed_pg_sample_data() -> None:
 
     pool = connection.get_pool()
     async with pool.acquire() as conn:
+        # ── Ensure device_name column exists (migration safety) ───────────
+        await conn.execute(
+            "ALTER TABLE pre_txn_queue ADD COLUMN IF NOT EXISTS device_name TEXT"
+        )
+
         alert_count = await conn.fetchval("SELECT COUNT(*) FROM alerts")
         case_count = await conn.fetchval("SELECT COUNT(*) FROM cases")
         txn_count = await conn.fetchval("SELECT COUNT(*) FROM transactions")
+        account_count = await conn.fetchval("SELECT COUNT(*) FROM accounts")
+
+        # ── Seed accounts from user_profiles.json ─────────────────────────
+        if account_count == 0:
+            profiles = load_user_profiles()
+            for p in profiles:
+                acc_id = p.get("account_id") or p.get("id")
+                if not acc_id:
+                    continue
+                profile_blob = {k: v for k, v in p.items()
+                                if k not in {"account_id", "id", "name", "account_type",
+                                             "kyc_tier", "risk_rating", "monthly_avg_credit",
+                                             "monthly_avg_debit", "typical_hours_start",
+                                             "typical_hours_end", "city", "state"}}
+                await conn.execute(
+                    """INSERT INTO accounts
+                       (id, name, account_type, kyc_tier, risk_rating,
+                        monthly_avg_credit, monthly_avg_debit,
+                        typical_hours_start, typical_hours_end,
+                        city, state, profile)
+                       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+                       ON CONFLICT (id) DO NOTHING""",
+                    acc_id,
+                    p.get("name", "Unknown"),
+                    p.get("account_type", "individual_savings"),
+                    p.get("kyc_tier"),
+                    p.get("risk_rating", "low"),
+                    int(p.get("monthly_avg_credit", 0)),
+                    int(p.get("monthly_avg_debit", 0)),
+                    int(p.get("typical_hours_start", 9)),
+                    int(p.get("typical_hours_end", 21)),
+                    p.get("city"),
+                    p.get("state"),
+                    json.dumps(profile_blob),
+                )
+            print(f"[Chakravyuh] Seeded {len(profiles)} accounts into PostgreSQL.")
+        else:
+            print(f"[Chakravyuh] PG already has {account_count} accounts.")
 
         if alert_count == 0:
             for a in alerts:
@@ -189,6 +235,8 @@ app.include_router(feedback.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")
 app.include_router(scenarios.router, prefix="/api")
 app.include_router(compliance.router, prefix="/api")
+app.include_router(accounts_router.router, prefix="/api")
+app.include_router(events_router.router, prefix="/api")
 
 
 @app.get("/health")

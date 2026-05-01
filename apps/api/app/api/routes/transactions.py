@@ -80,6 +80,7 @@ class PreTxnRequest(BaseModel):
     txn_type: str = "UPI"
     channel: str = "mobile"
     device_id: Optional[str] = None
+    device_name: Optional[str] = None
     device_known: bool = False
     ip_address: Optional[str] = None
     geo_location: Optional[str] = None
@@ -227,6 +228,21 @@ async def _auto_generate_alert_and_case(
 @router.post("/score")
 async def score_pre_transaction(req: PreTxnRequest):
     """Score a transaction BEFORE it executes. Returns real-time approve/block/mfa/manual_review decision."""
+    # ── Account validation ─────────────────────────────────────────────────
+    from app.db.repositories.account_repo import find_account
+    sender = await find_account(req.from_account)
+    if not sender:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Account '{req.from_account}' not found. Seed accounts first via /api/accounts.",
+        )
+    receiver = await find_account(req.to_account)
+    if not receiver:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Account '{req.to_account}' not found. Seed accounts first via /api/accounts.",
+        )
+
     # Submit to queue
     pre_id = await submit_pre_txn(
         from_account=req.from_account,
@@ -235,6 +251,7 @@ async def score_pre_transaction(req: PreTxnRequest):
         txn_type=req.txn_type,
         channel=req.channel,
         device_id=req.device_id,
+        device_name=req.device_name,
         device_known=req.device_known,
         ip_address=req.ip_address,
         geo_location=req.geo_location,
@@ -279,12 +296,37 @@ async def score_pre_transaction(req: PreTxnRequest):
         import logging
         logging.getLogger(__name__).warning("Auto-alert/case failed for %s: %s", pre_id, exc)
 
-    # AI explanation is omitted from the scoring response for speed.
-    # Fetch it on-demand via GET /transactions/{pre_id}/explain
+    # ── Broadcast to all SSE-connected dashboards ──────────────────────────
+    try:
+        from app.api.routes.events import broadcast
+        await broadcast("transaction_scored", {
+            "pre_txn_id": pre_id,
+            "from_account": req.from_account,
+            "from_name": sender.get("name", req.from_account),
+            "to_account": req.to_account,
+            "to_name": receiver.get("name", req.to_account),
+            "amount": req.amount,
+            "currency": req.currency,
+            "txn_type": req.txn_type,
+            "channel": req.channel,
+            "device_name": req.device_name,
+            "geo_location": req.geo_location,
+            "score": result["score"],
+            "decision": result["decision"],
+            "scored_at": scored_at,
+            "alert_id": alert_id,
+            "case_id": case_id,
+        })
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("SSE broadcast failed: %s", exc)
+
     return {
         "pre_txn_id": pre_id,
         "from_account": req.from_account,
+        "from_name": sender.get("name", req.from_account),
         "to_account": req.to_account,
+        "to_name": receiver.get("name", req.to_account),
         "amount": req.amount,
         "currency": req.currency,
         "score": result["score"],
@@ -354,6 +396,8 @@ async def get_pre_txn_queue(limit: int = Query(50, le=200)):
                     "currency": r["currency"],
                     "txn_type": r["txn_type"],
                     "channel": r["channel"],
+                    "device_name": r["device_name"],
+                    "geo_location": r["geo_location"],
                     "risk_score": r["risk_score"],
                     "decision": r["decision"],
                     "scored_at": r["scored_at"].isoformat() if r["scored_at"] else None,

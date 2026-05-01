@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS pre_txn_queue (
     txn_type     TEXT NOT NULL,
     channel      TEXT NOT NULL,
     device_id    TEXT,
+    device_name  TEXT,
     device_known BOOLEAN DEFAULT FALSE,
     ip_address   TEXT,
     geo_location TEXT,

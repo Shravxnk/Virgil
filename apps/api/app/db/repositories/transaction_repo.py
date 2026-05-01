@@ -98,6 +98,7 @@ async def submit_pre_txn(
     txn_type: str,
     channel: str,
     device_id: Optional[str] = None,
+    device_name: Optional[str] = None,
     device_known: bool = False,
     ip_address: Optional[str] = None,
     geo_location: Optional[str] = None,
@@ -117,6 +118,7 @@ async def submit_pre_txn(
         "txn_type": txn_type,
         "channel": channel,
         "device_id": device_id,
+        "device_name": device_name,
         "device_known": device_known,
         "ip_address": ip_address,
         "geo_location": geo_location,
@@ -139,10 +141,10 @@ async def submit_pre_txn(
             await conn.execute(
                 """INSERT INTO pre_txn_queue
                    (id, from_account, to_account, amount, currency, txn_type,
-                    channel, device_id, device_known, ip_address, geo_location, upi_ref)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)""",
+                    channel, device_id, device_name, device_known, ip_address, geo_location, upi_ref)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)""",
                 pre_id, from_account, to_account, amount, currency, txn_type,
-                channel, device_id, device_known, ip_address, geo_location, upi_ref,
+                channel, device_id, device_name, device_known, ip_address, geo_location, upi_ref,
             )
     return pre_id
 

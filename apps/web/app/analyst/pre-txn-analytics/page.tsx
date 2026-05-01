@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Header } from '@/components/layout/header';
-import { api } from '@/lib/api';
+import { api, SSE_URL } from '@/lib/api';
 
 interface PreTxnItem {
   id: string;
@@ -13,6 +13,8 @@ interface PreTxnItem {
   currency: string;
   txn_type: string;
   channel: string;
+  device_name?: string;
+  geo_location?: string;
   risk_score: number;
   decision: 'approve' | 'mfa' | 'manual_review' | 'block' | 'pending';
   risk_signals?: {
@@ -103,14 +105,26 @@ export default function PreTxnAnalyticsPage() {
 
   useEffect(() => {
     loadData();
-    // Poll every 2 seconds for near-real-time updates
+    // Poll every 2 seconds as fallback
     const tick = setInterval(loadData, 2000);
-    // Also refresh instantly when Transaction Scorer submits a new score
+    // Instant update via SSE (push from server when any transaction is scored)
+    const es = new EventSource(SSE_URL);
+    es.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'transaction_scored') loadData();
+      } catch { /* ignore malformed */ }
+    };
+    // Also instant update when Transaction Scorer is open in same browser tab
     const onStorage = (e: StorageEvent) => {
       if (e.key === 'pretxn_scored') loadData();
     };
     window.addEventListener('storage', onStorage);
-    return () => { clearInterval(tick); window.removeEventListener('storage', onStorage); };
+    return () => {
+      clearInterval(tick);
+      es.close();
+      window.removeEventListener('storage', onStorage);
+    };
   }, [loadData]);
 
   // treat all items as scored — API transactions don't have a `completed` flag
@@ -298,6 +312,16 @@ export default function PreTxnAnalyticsPage() {
                             {[item.txn_type, item.channel].map(tag => (
                               <span key={tag} style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 600, color: 'var(--text-muted)', background: 'var(--bg-overlay)', border: '1px solid var(--border-dim)', borderRadius: 3, padding: '1px 6px', textTransform: 'uppercase' }}>{tag}</span>
                             ))}
+                            {item.device_name && (
+                              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, color: 'var(--text-muted)', background: 'var(--bg-overlay)', border: '1px solid var(--border-dim)', borderRadius: 3, padding: '1px 6px', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                📱 {item.device_name}
+                              </span>
+                            )}
+                            {item.geo_location && (
+                              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, color: 'var(--text-muted)', background: 'var(--bg-overlay)', border: '1px solid var(--border-dim)', borderRadius: 3, padding: '1px 6px' }}>
+                                📍 {item.geo_location}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>

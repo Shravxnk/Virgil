@@ -14,6 +14,9 @@ import type {
 // In local dev: set NEXT_PUBLIC_API_URL=http://localhost:8000 in .env.local
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+/** URL for the SSE stream — use in EventSource() */
+export const SSE_URL = `${API_BASE}/api/events/stream`;
+
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
@@ -91,7 +94,10 @@ export const api = {
     amount: number;
     txn_type?: string;
     channel?: string;
+    device_id?: string;
+    device_name?: string;
     device_known?: boolean;
+    geo_location?: string;
   }) =>
     fetchAPI('/api/transactions/score', {
       method: 'POST',
@@ -100,6 +106,10 @@ export const api = {
 
   getPreTxnQueue: (limit?: number) =>
     fetchAPI(`/api/transactions/queue${limit ? `?limit=${limit}` : ''}`),
+
+  // Accounts (used by GPay mock)
+  getAccounts: () => fetchAPI<{ accounts: unknown[]; total: number }>('/api/accounts'),
+  getAccount: (id: string) => fetchAPI(`/api/accounts/${encodeURIComponent(id)}`),
 
   getTransactions: (params?: { flagged?: boolean; limit?: number; offset?: number }) => {
     const searchParams = new URLSearchParams();

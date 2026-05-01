@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Header } from '@/components/layout/header';
 import { RiskScoreCard } from '@/components/dashboard/risk-score-card';
 import { AlertInbox } from '@/components/dashboard/alert-inbox';
 import { DailyTrendChart, ScoreDistributionChart } from '@/components/dashboard/kpi-chart';
 import { CaseTable } from '@/components/dashboard/case-table';
 import { DashboardSkeleton } from '@/components/shared/loading-skeleton';
-import { api } from '@/lib/api';
+import { api, SSE_URL } from '@/lib/api';
 import { AnalystDashboardResponse, CaseListResponse } from '@/types';
 import { AlertTriangle, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
 
@@ -17,27 +17,37 @@ export default function AnalystDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [dashData, caseData] = await Promise.all([
-          api.getAnalystDashboard(),
-          api.getCases(),
-        ]);
-        setDashboard(dashData);
-        setCases(caseData);
-        setError(null);
-      } catch (e) {
-        console.error('Failed to load dashboard', e);
-        setError('Failed to load dashboard. Is the backend running?');
-      } finally {
-        setLoading(false);
-      }
+  const load = useCallback(async () => {
+    try {
+      const [dashData, caseData] = await Promise.all([
+        api.getAnalystDashboard(),
+        api.getCases(),
+      ]);
+      setDashboard(dashData);
+      setCases(caseData);
+      setError(null);
+    } catch (e) {
+      console.error('Failed to load dashboard', e);
+      setError('Failed to load dashboard. Is the backend running?');
+    } finally {
+      setLoading(false);
     }
-    load();
-    const id = setInterval(load, 30000);
-    return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    load();
+    // Refresh every 30s as fallback
+    const id = setInterval(load, 30000);
+    // Instant refresh when a transaction is scored via SSE
+    const es = new EventSource(SSE_URL);
+    es.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'transaction_scored') load();
+      } catch { /* ignore */ }
+    };
+    return () => { clearInterval(id); es.close(); };
+  }, [load]);
 
   if (loading) {
     return (
