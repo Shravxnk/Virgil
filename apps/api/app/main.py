@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse  # noqa: E402
 from app.api.routes import alerts, cases, compliance, dashboard, feedback, graph, reports, risk, scenarios, transactions  # noqa: E402
 from app.api.routes import accounts as accounts_router  # noqa: E402
 from app.api.routes import events as events_router  # noqa: E402
+from app.api.routes import admin as admin_router  # noqa: E402
 from app.config import get_settings  # noqa: E402
 
 logging.basicConfig(level=logging.INFO)
@@ -237,6 +238,7 @@ app.include_router(scenarios.router, prefix="/api")
 app.include_router(compliance.router, prefix="/api")
 app.include_router(accounts_router.router, prefix="/api")
 app.include_router(events_router.router, prefix="/api")
+app.include_router(admin_router.router, prefix="/api")
 
 
 @app.get("/health")

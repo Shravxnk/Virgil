@@ -130,6 +130,8 @@ export default function GPayPage() {
   const [deviceName, setDeviceName] = useState('Detecting device...');
   const [geoLoc, setGeoLoc] = useState('');
   const [geoLoading, setGeoLoading] = useState(false);
+  const [biometricStep, setBiometricStep] = useState<'prompt' | 'fingerprint' | 'face' | 'success' | null>(null);
+  const [biometricLoading, setBiometricLoading] = useState(false);
   const amtRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -192,11 +194,175 @@ export default function GPayPage() {
   if (step === 'result' && result) {
     const configs = {
       approve: { icon: '✓', iconBg: '#34A853', iconColor: '#fff', title: 'Payment Sent!', sub: 'Transaction completed successfully', accent: '#34A853', bg: '#fff', pillBg: '#E8F5E9', pillText: '#2E7D32' },
-      mfa:     { icon: '🔐', iconBg: '#4285F4', iconColor: '#fff', title: 'Verify Identity', sub: 'Check your phone for an OTP to complete payment', accent: '#4285F4', bg: '#fff', pillBg: '#E3F2FD', pillText: '#1565C0' },
+      mfa:     { icon: '🔐', iconBg: '#4285F4', iconColor: '#fff', title: 'Verify Identity', sub: 'Use your fingerprint or face to complete payment', accent: '#4285F4', bg: '#fff', pillBg: '#E3F2FD', pillText: '#1565C0' },
       manual_review: { icon: '⏳', iconBg: '#FBBC04', iconColor: '#fff', title: 'Under Review', sub: 'Our team is reviewing this payment', accent: '#F9A825', bg: '#fff', pillBg: '#FFF8E1', pillText: '#F57F17' },
       block:   { icon: '✕', iconBg: '#EA4335', iconColor: '#fff', title: 'Payment Declined', sub: 'High-risk transaction blocked for your safety', accent: '#EA4335', bg: '#fff', pillBg: '#FFEBEE', pillText: '#C62828' },
     };
     const cfg = configs[result.decision] ?? configs.approve;
+
+    // ── MFA Biometric Flow ─────────────────────────────────────────────
+    if (result.decision === 'mfa' && biometricStep) {
+      return (
+        <div style={{ minHeight: '100dvh', background: '#F8F9FA', fontFamily: '"Google Sans", Roboto, "Helvetica Neue", sans-serif', display: 'flex', flexDirection: 'column' }}>
+          {/* Minimal header */}
+          <div style={{ background: '#fff', padding: '16px 20px', borderBottom: '1px solid #E8EAED', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button onClick={() => setBiometricStep(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#5F6368"/></svg>
+            </button>
+            <GPLogo size={22} />
+            <span style={{ fontWeight: 600, fontSize: 17, color: '#202124' }}>Verify Identity</span>
+          </div>
+
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', maxWidth: 420, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+            {biometricStep === 'prompt' && (
+              <>
+                <div style={{ fontSize: 64, marginBottom: 24 }}>🔐</div>
+                <h2 style={{ margin: '0 0 12px', fontSize: 22, fontWeight: 600, color: '#202124', textAlign: 'center' }}>Choose Verification Method</h2>
+                <p style={{ margin: '0 0 32px', fontSize: 14, color: '#5F6368', textAlign: 'center' }}>Select how you'd like to verify this payment</p>
+
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 320 }}>
+                  <button onClick={() => setBiometricStep('fingerprint')} style={{
+                    width: '100%', padding: '16px', borderRadius: 12, border: 'none',
+                    background: '#E3F2FD', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    fontSize: 16, fontWeight: 600, color: '#1A73E8',
+                    transition: 'all 0.2s',
+                  }} onMouseEnter={(e) => (e.currentTarget.style.background = '#BBDEFB')} onMouseLeave={(e) => (e.currentTarget.style.background = '#E3F2FD')}>
+                    <span style={{ fontSize: 28 }}>👆</span>
+                    <span>Fingerprint</span>
+                  </button>
+                  <button onClick={() => setBiometricStep('face')} style={{
+                    width: '100%', padding: '16px', borderRadius: 12, border: 'none',
+                    background: '#F3E5F5', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    fontSize: 16, fontWeight: 600, color: '#7B1FA2',
+                    transition: 'all 0.2s',
+                  }} onMouseEnter={(e) => (e.currentTarget.style.background = '#E1BEE7')} onMouseLeave={(e) => (e.currentTarget.style.background = '#F3E5F5')}>
+                    <span style={{ fontSize: 28 }}>😊</span>
+                    <span>Face Recognition</span>
+                  </button>
+                  <button onClick={() => setBiometricStep(null)} style={{
+                    width: '100%', padding: '12px', borderRadius: 12, border: '1px solid #E8EAED',
+                    background: '#fff', cursor: 'pointer',
+                    fontSize: 14, fontWeight: 500, color: '#5F6368',
+                  }}>
+                    Enter OTP Instead
+                  </button>
+                </div>
+              </>
+            )}
+
+            {biometricStep === 'fingerprint' && (
+              <>
+                <div style={{
+                  width: 120, height: 120, borderRadius: '50%', background: 'linear-gradient(135deg, #4285F4, #1A73E8)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 50, marginBottom: 24, boxShadow: '0 4px 20px rgba(66,133,244,0.3)',
+                  animation: biometricLoading ? 'pulse 1.5s ease-in-out infinite' : 'none',
+                }}>
+                  👆
+                </div>
+                <h2 style={{ margin: '0 0 12px', fontSize: 22, fontWeight: 600, color: '#202124', textAlign: 'center' }}>
+                  {biometricLoading ? 'Scanning...' : 'Place Your Finger'}
+                </h2>
+                <p style={{ margin: '0 0 28px', fontSize: 14, color: '#5F6368', textAlign: 'center' }}>
+                  {biometricLoading
+                    ? 'Hold steady until authentication completes'
+                    : 'Place your registered fingerprint on the sensor'}
+                </p>
+
+                {!biometricLoading && (
+                  <button onClick={async () => {
+                    setBiometricLoading(true);
+                    await new Promise(r => setTimeout(r, 2000));
+                    setBiometricStep('success');
+                  }} style={{
+                    width: '100%', maxWidth: 320, height: 54, borderRadius: 27,
+                    background: '#1A73E8', border: 'none', color: '#fff',
+                    fontSize: 16, fontWeight: 600, cursor: 'pointer',
+                  }}>
+                    Simulate Fingerprint Match
+                  </button>
+                )}
+
+                <style>{`@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}`}</style>
+              </>
+            )}
+
+            {biometricStep === 'face' && (
+              <>
+                <div style={{
+                  width: 120, height: 120, borderRadius: '50%', background: 'linear-gradient(135deg, #EA4335, #D33426)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 50, marginBottom: 24, boxShadow: '0 4px 20px rgba(234,67,53,0.3)',
+                  animation: biometricLoading ? 'pulse 1.5s ease-in-out infinite' : 'none',
+                }}>
+                  😊
+                </div>
+                <h2 style={{ margin: '0 0 12px', fontSize: 22, fontWeight: 600, color: '#202124', textAlign: 'center' }}>
+                  {biometricLoading ? 'Analyzing Face...' : 'Look At Camera'}
+                </h2>
+                <p style={{ margin: '0 0 28px', fontSize: 14, color: '#5F6368', textAlign: 'center' }}>
+                  {biometricLoading
+                    ? 'Comparing facial features'
+                    : 'Keep your face centered in the frame'}
+                </p>
+
+                {!biometricLoading && (
+                  <button onClick={async () => {
+                    setBiometricLoading(true);
+                    await new Promise(r => setTimeout(r, 2500));
+                    setBiometricStep('success');
+                  }} style={{
+                    width: '100%', maxWidth: 320, height: 54, borderRadius: 27,
+                    background: '#EA4335', border: 'none', color: '#fff',
+                    fontSize: 16, fontWeight: 600, cursor: 'pointer',
+                  }}>
+                    Simulate Face Match
+                  </button>
+                )}
+
+                <style>{`@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}`}</style>
+              </>
+            )}
+
+            {biometricStep === 'success' && (
+              <>
+                <div style={{
+                  width: 100, height: 100, borderRadius: '50%', background: '#34A853',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 48, marginBottom: 24, animation: 'pop 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+                }}>
+                  ✓
+                </div>
+                <h2 style={{ margin: '0 0 12px', fontSize: 22, fontWeight: 600, color: '#202124', textAlign: 'center' }}>
+                  Identity Verified
+                </h2>
+                <p style={{ margin: '0 0 28px', fontSize: 14, color: '#5F6368', textAlign: 'center' }}>
+                  Payment is processing securely
+                </p>
+
+                <div style={{ background: '#E8F5E9', border: '1px solid #81C784', borderRadius: 12, padding: '16px', marginBottom: 24, textAlign: 'center' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#2E7D32', marginBottom: 8 }}>✓ Authentication Successful</div>
+                  <div style={{ fontSize: 12, color: '#2E7D32' }}>Your fingerprint/face has been verified and matched</div>
+                </div>
+
+                <button onClick={() => { setBiometricStep(null); reset(); }} style={{
+                  width: '100%', maxWidth: 320, height: 54, borderRadius: 27,
+                  background: '#34A853', border: 'none', color: '#fff',
+                  fontSize: 16, fontWeight: 600, cursor: 'pointer',
+                }}>
+                  Complete Payment
+                </button>
+
+                <style>{`@keyframes pop{0%{transform:scale(0.5);opacity:0}100%{transform:scale(1);opacity:1}}`}</style>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div style={{ minHeight: '100dvh', background: '#F8F9FA', fontFamily: '"Google Sans", Roboto, "Helvetica Neue", sans-serif', display: 'flex', flexDirection: 'column' }}>
         {/* Header bar */}

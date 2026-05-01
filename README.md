@@ -1,53 +1,737 @@
-<div align="center">
+# Chakravyuh - AI Fraud Detection System
 
-# 🛡️ Chakravyuh
-
-### AI-Powered Real-Time Financial Fraud Detection and Prevention System
-
-*Detects, prevents, investigates, and reports banking fraud — before and after transactions complete*
-
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Next.js 14](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 36 Passing](https://img.shields.io/badge/Tests-36%20Passing-brightgreen.svg)](#-all-36-test-cases-explained)
-
-</div>
+**A real-time fraud detection platform for pre-transaction and post-transaction analysis, featuring ML scoring, biometric authentication, device fingerprinting, and advanced AML/CFT pattern detection.**
 
 ---
 
-## Table of Contents
+## Overview
 
-1. [All 36 Test Cases Explained](#-all-36-test-cases-explained)
-   - [Scoring Engine Tests (13 tests)](#1-scoring-engine-tests--test_scoringpy)
-   - [API Endpoint Tests (20 tests)](#2-api-endpoint-tests--test_apipy)
-   - [Graph Analyzer Tests (3 tests)](#3-graph-analyzer-tests--test_graphpy)
-2. [What Is Chakravyuh?](#-what-is-chakravyuh)
-3. [Problem Statement](#-problem-statement)
-4. [System Architecture](#-system-architecture)
-5. [How the Scoring Engine Works](#-how-the-scoring-engine-works)
-   - [Formula 1 — Amount Anomaly](#formula-1--amount-anomaly-max-25-points)
-   - [Formula 2 — Time Anomaly](#formula-2--time-anomaly-max-15-points)
-   - [Formula 3 — Device Risk](#formula-3--device-risk-max-15-points)
-   - [Formula 4 — Beneficiary Risk](#formula-4--beneficiary-risk-max-20-points)
-   - [Formula 5 — Graph Risk](#formula-5--graph-risk-max-25-points)
-   - [Formula 6 — Final Score and Decision](#formula-6--final-score-and-decision)
-   - [All 13 Formulas Summary](#all-13-formulas-at-a-glance)
-6. [Pre-Transaction Detection — Full Walkthrough](#-pre-transaction-detection--full-walkthrough)
-7. [Post-Transaction Detection — Full Walkthrough](#-post-transaction-detection--full-walkthrough)
-8. [Fraud Chain Detection (ATO → Transaction Abuse)](#-fraud-chain-detection)
-9. [Graph Intelligence — How Fund Flow Analysis Works](#-graph-intelligence)
-10. [AI Explanation Layer (LLM)](#-ai-explanation-layer)
-11. [RAG Knowledge Retrieval (ChromaDB)](#-rag-knowledge-retrieval)
-12. [FIU Report Generation (PDF)](#-fiu-report-generation)
-13. [Analyst Console — Every Screen Explained](#-analyst-console)
-14. [Executive Dashboard — Every Screen Explained](#-executive-dashboard)
-15. [Database Schema — All 6 Tables](#-database-schema--all-6-tables)
-16. [API Endpoints — Complete Reference](#-api-endpoints--complete-reference)
-17. [Data Flow Diagrams](#-data-flow-diagrams)
-18. [How the System Learns and Improves](#-how-the-system-learns-and-improves)
-19. [Project Structure](#-project-structure)
-20. [How to Run](#-how-to-run)
+Chakravyuh is a comprehensive fraud detection system designed to catch suspicious financial transactions in real-time. It combines:
+
+- **Pre-transaction scoring** (< 100ms) before funds move
+- **Real-time device detection** (iPhone, Pixel 7, exact device models)
+- **Biometric MFA** (fingerprint/face recognition)
+- **Advanced graph analytics** (circular transfers, layering, structuring detection)
+- **Live dashboards** with SSE real-time updates
+
+### Use Cases
+
+✓ **Payment processors**: Score transactions before settlement  
+✓ **Banks**: Detect AML/CFT patterns at account level  
+✓ **Fintech**: Pre-txn authorization for UPI/NEFT/IMPS  
+✓ **Demo/Testing**: 40 pre-seeded test accounts with realistic patterns  
+
+---
+
+## Architecture
+
+### System Diagram
+
+```
+┌─────────────────┐
+│  User (Mobile)  │
+│   GPay Mock UI  │
+└────────┬────────┘
+         │ Device: iPhone, geo: 12.97,77.59
+         │ UPI ₹500K to recipient
+         ▼
+┌──────────────────────────────────────────────────────────────┐
+│          NEXT.JS Frontend (TypeScript)                        │
+│  • GPay Mock UI (white theme, Google Pay design)              │
+│  • Real device detection (Client Hints API + UA fallback)     │
+│  • Async geolocation capture                                  │
+│  • Pre-txn analytics dashboard (SSE + 2s polling)             │
+│  • Analyst main dashboard with cases/alerts                   │
+└────────────┬─────────────────────────────────────────────────┘
+             │ POST /api/transactions/score
+             │ {from_account, to_account, amount, device_name, geo_location}
+             ▼
+┌──────────────────────────────────────────────────────────────┐
+│        FASTAPI Backend (Python 3.11)                          │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │ Pre-Transaction Scorer (< 100ms)                       │  │
+│  │  • Amount anomaly (ratio to baseline)                  │  │
+│  │  • Time anomaly (9-18 typical hours)                   │  │
+│  │  • Device risk (unknown device, low trust IP)          │  │
+│  │  • Beneficiary risk (first-time, high-risk rating)     │  │
+│  │  • Graph/network signals (circular, layering, hops)    │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                          ▼                                    │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │ Decision Engine                                        │  │
+│  │  • 0-30:   APPROVE                                     │  │
+│  │  • 30-60:  MFA (step-up auth)                          │  │
+│  │  • 60-80:  MANUAL_REVIEW                               │  │
+│  │  • 80-100: BLOCK                                       │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                          ▼                                    │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │ Case/Alert Generation                                 │  │
+│  │  • Circular transfers → Case (ring detection)          │  │
+│  │  • Layering patterns → Case (multi-hop detection)      │  │
+│  │  • High-risk score → Alert (flagged for review)        │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                          │                                    │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │ Real-Time SSE Broadcast                                │  │
+│  │  /api/events/stream                                    │  │
+│  │  → Sends to all connected dashboards                   │  │
+│  └────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────┘
+             │ Stores: pre_txn_queue, transactions, alerts, cases
+             ▼
+┌──────────────────────────────────────────────────────────────┐
+│  PostgreSQL (Render External)                                │
+│  • Accounts (40 bifurcated test accounts)                    │
+│  • Pre-transaction queue (scored, awaiting execution)        │
+│  • Transactions (completed, post-analysis)                   │
+│  • Alerts (high-risk flags)                                  │
+│  • Cases (clusters of suspicious activity)                   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Project Structure
+
+```
+chakravyuh/
+├── apps/
+│   ├── api/                          # FastAPI backend
+│   │   ├── app/
+│   │   │   ├── main.py               # App initialization, route mounting
+│   │   │   ├── config.py             # DB URL, settings
+│   │   │   ├── api/routes/
+│   │   │   │   ├── transactions.py   # Pre-txn scoring, queue mgmt
+│   │   │   │   ├── events.py         # SSE endpoint
+│   │   │   │   └── accounts.py       # Account lookup
+│   │   │   ├── core/
+│   │   │   │   ├── scoring.py        # Scoring rules (amount, time, device, …)
+│   │   │   │   ├── data_generator.py # Synthetic account/transaction generation
+│   │   │   │   ├── data_loader.py    # JSON → runtime store
+│   │   │   │   └── graph_analyzer.py # Circular, layering detection
+│   │   │   ├── db/
+│   │   │   │   ├── connection.py     # asyncpg, pool management
+│   │   │   │   ├── schema.sql        # DDL: tables, indexes, functions
+│   │   │   │   └── repositories/     # DB query functions
+│   │   │   │       ├── account_repo.py
+│   │   │   │       └── transaction_repo.py
+│   │   │   ├── models/
+│   │   │   │   ├── transaction.py    # Pydantic schemas
+│   │   │   │   └── …
+│   │   │   ├── services/
+│   │   │   │   ├── alert_service.py  # Alert creation
+│   │   │   │   ├── case_service.py   # Case clustering
+│   │   │   │   └── risk_scoring.py   # Risk computation
+│   │   │   └── llm/
+│   │   │       └── explainer.py      # LLM-generated explanations (future)
+│   │   ├── tests/
+│   │   │   ├── test_api.py           # Integration tests
+│   │   │   ├── test_scoring.py       # Scoring rules validation
+│   │   │   └── test_graph.py         # Graph analyzer tests
+│   │   ├── pyproject.toml            # Python dependencies
+│   │   └── requirements.txt          # Pinned versions
+│   │
+│   └── web/                          # Next.js 14 frontend
+│       ├── app/
+│       │   ├── globals.css           # Global Tailwind + custom
+│       │   ├── layout.tsx            # Root layout
+│       │   ├── page.tsx              # Redirect to analyst
+│       │   ├── gpay/
+│       │   │   └── page.tsx          # GPay mock UI (white theme, biometric MFA)
+│       │   ├── analyst/
+│       │   │   ├── layout.tsx        # Analyst layout
+│       │   │   ├── page.tsx          # Main dashboard (cases, alerts, stats)
+│       │   │   ├── pre-txn-analytics/
+│       │   │   │   └── page.tsx      # Pre-txn queue (real-time, device/geo display)
+│       │   │   ├── transactions/
+│       │   │   ├── cases/
+│       │   │   ├── alerts/
+│       │   │   ├── manual-review/
+│       │   │   ├── demo/
+│       │   │   └── … (other analyst routes)
+│       │   └── executive/            # Executive dashboard (mock)
+│       ├── components/
+│       │   ├── dashboard/
+│       │   ├── graph/
+│       │   ├── layout/
+│       │   ├── shared/
+│       │   └── ui/                   # Reusable UI components
+│       ├── hooks/
+│       │   └── use-api.ts            # API client hook
+│       ├── lib/
+│       │   ├── api.ts                # Typed API client
+│       │   └── utils.ts              # Helpers
+│       ├── types/
+│       │   └── index.ts              # TypeScript interfaces
+│       ├── next.config.js
+│       ├── tailwind.config.ts
+│       ├── tsconfig.json
+│       └── package.json
+│
+├── scripts/
+│   ├── seed_db.py                    # Populate DB with 40 bifurcated accounts + patterns
+│   ├── generate_fixtures.py          # Generate test data JSON files
+│   └── seed_vectors.py               # (Future) Seed vector DB for retrieval
+│
+├── data/
+│   ├── docs/
+│   │   ├── fraud_knowledge_base.md   # AML/CFT fraud patterns
+│   │   ├── policy_playbook.md        # Policy guidelines
+│   │   └── reporting_templates.md    # Report templates
+│   └── sample/
+│       ├── accounts.json             # Sample account data
+│       ├── transactions.json         # Sample transactions
+│       ├── alerts.json               # Sample alerts
+│       ├── cases.json                # Sample cases
+│       └── … (other fixtures)
+│
+├── docker/
+│   ├── api.Dockerfile               # (Legacy - using Render native)
+│   └── web.Dockerfile               # (Legacy - using Render native)
+│
+├── render.yaml                       # Render blueprint (native Python + Node services)
+├── docker-compose.yml                # Local development
+├── package.json                      # Workspace root
+├── requirements.txt                  # Root Python dependencies
+├── README.md                         # This file
+└── TESTING_GUIDE.md                 # Comprehensive testing scenarios
+```
+
+---
+
+## Quick Start
+
+### 1. Local Development
+
+#### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- PostgreSQL 14+ (or use external Render DB)
+- npm or yarn
+
+#### Setup
+
+```bash
+# Clone repo
+git clone <repo-url>
+cd chakravyuh
+
+# Python backend
+cd apps/api
+python -m venv venv
+source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+pip install -r requirements.txt
+
+# Seed database with 40 test accounts
+python ../../scripts/seed_db.py
+
+# Start FastAPI
+uvicorn app.main:app --reload --port 8000
+
+# ─────────────────────────────────────────
+
+# Frontend (new terminal)
+cd apps/web
+npm install
+NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
+
+# Open browser
+# GPay:           http://localhost:3000/gpay
+# Dashboard:      http://localhost:3000/analyst
+```
+
+#### Environment Variables
+
+**Backend** (`apps/api/.env`):
+```
+DATABASE_URL=postgresql://user:pass@localhost/chakravyuh
+OPENAI_API_KEY=sk-... (optional, for LLM explanations)
+```
+
+**Frontend** (`apps/web/.env.local`):
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+### 2. Render Deployment
+
+#### Deploy Script (One-Click)
+
+```bash
+# Push to GitHub
+git add .
+git commit -m "Deploy to Render"
+git push origin main
+
+# Render auto-detects render.yaml and deploys:
+# - Backend: https://chakravyuh-api-fdlt.onrender.com
+# - Frontend: https://chakravyuh-web-xxxx.onrender.com
+```
+
+#### Manual Steps
+
+1. **Create Render Services**:
+   - External PostgreSQL DB
+   - Python native service (API)
+   - Node native service (Web)
+
+2. **Set Environment Variables** in Render dashboard:
+   - API: `DATABASE_URL`
+   - Web: `NEXT_PUBLIC_API_URL` (API URL)
+
+3. **Deploy** via `render.yaml` or git push
+
+---
+
+## Key Features
+
+### 1. Real-Time Device Detection
+
+**What it does:**  
+Detects actual mobile device models (iPhone 16, Pixel 7, SM-S918B, etc.) in real-time.
+
+**How:**
+```typescript
+// Client Hints API (Chrome/Edge Android)
+const hints = await navigator.userAgentData.getHighEntropyValues(['model', 'platform']);
+// Returns: "Pixel 7", "SM-S918B"
+
+// UA Fallback (iOS, Android, other)
+// Parses User-Agent string for model names
+```
+
+**Captured:**
+- Device name: Displayed as `📱 iPhone (iOS 17.4)`
+- Device ID: Stored as `windows_pc`, `pixel_7_pro`, etc.
+- Device risk: Unknown devices add +8 points to score
+
+### 2. GPay Mock UI (White Theme)
+
+**What it is:**  
+A realistic Google Pay interface for testing pre-transaction scoring.
+
+**Features:**
+- Material Design 3 styling (Google brand colors)
+- Light/white theme (Google Pay authentic)
+- Real accounts from DB (dropdown selector)
+- Device + geo capture (automatic with user permission)
+- Three screens: Form → Confirm → Result
+
+**Result Screen Flows:**
+- **APPROVE**: Green checkmark, transaction sent
+- **MFA**: Biometric choice (fingerprint/face)
+- **MANUAL_REVIEW**: Yellow warning, under review
+- **BLOCK**: Red block, declined
+
+**Access:**
+```
+https://chakravyuh-web-xxxx.onrender.com/gpay
+```
+
+### 3. Biometric MFA (Fingerprint/Face)
+
+**What it does:**  
+Step-up authentication for medium-risk transactions.
+
+**Flow:**
+1. Transaction scored as MFA-required (score 30-60)
+2. Result screen shows "Verify Identity"
+3. User chooses: Fingerprint OR Face Recognition
+4. Simulated scanning UI (2-3 seconds)
+5. Success confirmation
+6. Back to form for new transaction
+
+**Implementation:**
+- No actual biometric hardware required (simulated for demo)
+- UI mimics real Apple/Google biometric experiences
+- Animations: pulse during scan, pop animation on success
+
+### 4. Pre-Transaction Analytics Dashboard
+
+**What it shows:**
+- Real-time queue of scored transactions
+- Device names (📱 emoji + model)
+- Geo-location (📍 emoji + coordinates)
+- Risk scores (0-100 with color coding)
+- Decision badges (APPROVE/MFA/REVIEW/BLOCK)
+
+**Real-Time Updates:**
+- SSE pushed from backend (instant)
+- 2s polling fallback
+- Filtering tabs: All, Block, Review, MFA, Approve
+
+**Access:**
+```
+https://chakravyuh-web-xxxx.onrender.com/analyst/pre-txn-analytics
+```
+
+### 5. Account Bifurcation (40 Test Accounts)
+
+**Purpose:**  
+Enable realistic testing of different fraud scenarios.
+
+**Groups:**
+
+| Group | Accounts | Purpose | Pattern |
+|-------|----------|---------|---------|
+| **Tier 1: POST-txn Baseline** | ACC-001 to ACC-010 | Normal transactions, low risk | 5M-15M monthly credit, predictable amounts |
+| **Tier 2: Pre-txn Patterns** | ACC-011 to ACC-020 | Vary decisions (approve/MFA/review/block) | ACC-011 (approve), ACC-012 (MFA), ACC-013 (review), ACC-014 (block) |
+| **Tier 3: Fraud Rings** | ACC-021 to ACC-030 | Circular transfers, layering, structuring | 021→022→023→024→021 ring; 025→026→027→028 layering |
+| **Tier 4: Manual Test** | ACC-031 to ACC-040 | Reserved for custom scenarios | Placeholder for future tests |
+
+**Seeding:**
+```bash
+python scripts/seed_db.py
+```
+
+This creates:
+- 40 accounts with diverse profiles
+- ~100 transactions with seeded patterns
+- Circular transfer rings (high-risk)
+- Layering multi-hop networks
+- Structuring attempts (amounts just under ₹100k)
+
+### 6. Graph Analytics (Circular/Layering Detection)
+
+**Circular Transfers (AML):**
+```
+ACC-021 → ACC-022 → ACC-023 → ACC-024 → ACC-021
+(Ring pattern, all amounts identical)
+```
+- Detected via graph traversal
+- Auto-creates Case with risk score 90+
+- Reason code: `CIRCULAR_TRANSFERS`
+
+**Layering (AML):**
+```
+ACC-025 → ACC-026 → ACC-027 → ACC-028
+(Multi-hop, amounts split/recombined)
+```
+- Detected via hop count ≥ 3
+- Risk score: 85+
+- Reason code: `LAYERING_DETECTED`
+
+**Structuring (CFT):**
+```
+ACC-029 → ACC-030 (95K)
+ACC-029 → ACC-031 (95K)
+ACC-029 → ACC-032 (95K)
+ACC-029 → ACC-033 (95K)
+(Multiple small transactions to avoid ₹100k threshold)
+```
+- Detected via pattern clustering
+- Risk score: 70-80
+- Reason code: `STRUCTURING_PATTERN`
+
+---
+
+## Scoring Rules
+
+### Formula
+
+```
+Total Score = Amount Anomaly + Time Anomaly + Device Risk
+            + Beneficiary Risk + Graph Risk
+            (capped at 0-100)
+```
+
+### Components
+
+#### 1. Amount Anomaly (0-25 points)
+
+**Rule:**  
+Compare transaction amount to account's monthly average.
+
+```
+Ratio = Amount / (Monthly Avg Credit / 30 days)
+
+Ratio ≤ 1.5x:      0 pts
+Ratio 1.5-3.0x:    5-11 pts (linear)
+Ratio 3.0-8.0x:    11-21 pts (linear)
+Ratio > 8.0x:      21-25 pts
+```
+
+**Example:**
+- Account: ₹300K monthly avg
+- Transaction: ₹500K
+- Ratio: 1.67x
+- Score: ~6 pts (within normal range)
+
+---
+
+#### 2. Time Anomaly (0-15 points)
+
+**Rule:**  
+Check if transaction is within typical hours.
+
+```
+Typical hours: 9 AM - 6 PM (configurable per account)
+
+Time within typical:      0 pts
+Time 1-8 hrs outside:     1-15 pts (gradient)
+Time > 8 hrs outside:     15 pts (peak risk)
+```
+
+---
+
+#### 3. Device Risk (0-15 points)
+
+**Rule:**  
+Flag unknown devices, low-trust IPs.
+
+```
+Unknown device:     +8 pts
+New device from old IP: +3 pts
+Low-trust IP:       +7 pts
+High-risk IP (VPN):  +5 pts
+(capped at 15)
+```
+
+---
+
+#### 4. Beneficiary Risk (0-20 points)
+
+**Rule:**  
+Flag high-risk recipients.
+
+```
+First-time beneficiary:    +3 pts
+High-risk rating:          +8 pts
+PEP (Politically Exposed): +5 pts
+Offshore account:          +4 pts
+Sanctions list:            +10 pts (auto-block)
+(capped at 20)
+```
+
+---
+
+#### 5. Graph/Network Risk (0-25 points)
+
+**Rule:**  
+Detect suspicious transfer patterns.
+
+```
+Circular transfer:      +10 pts
+Layering (hop ≥ 3):     +8 pts
+Structuring pattern:     +7 pts
+Connected high-risk:     +7 pts
+(capped at 25)
+```
+
+---
+
+### Decision Thresholds
+
+```
+Score 0-30:        APPROVE
+Score 30-60:       MFA (step-up auth required)
+Score 60-80:       MANUAL_REVIEW (analyst investigation)
+Score 80-100:      BLOCK (prevented from execution)
+```
+
+---
+
+## API Reference
+
+### Pre-Transaction Scoring
+
+**Request:**
+```http
+POST /api/transactions/score
+Content-Type: application/json
+
+{
+  "from_account": "ACC-001",
+  "to_account": "ACC-011",
+  "amount": 500000,
+  "txn_type": "UPI",
+  "channel": "mobile",
+  "device_id": "iphone_13_pro",
+  "device_name": "iPhone (iOS 17.4)",
+  "device_known": false,
+  "geo_location": "12.9716,77.5946"
+}
+```
+
+**Response (200):**
+```json
+{
+  "pre_txn_id": "PRE-ABC123DE",
+  "score": 25,
+  "decision": "approve",
+  "reason_codes": ["AMOUNT_LOW", "TIME_NORMAL"],
+  "alert_id": null,
+  "case_id": null,
+  "from_name": "Rajesh Enterprises",
+  "to_name": "Ankit Approved Trades",
+  "amount": 500000,
+  "scored_at": "2026-05-01T10:30:00Z"
+}
+```
+
+---
+
+### Accounts
+
+**List:**
+```http
+GET /api/accounts
+
+[
+  {
+    "id": "ACC-001",
+    "name": "Rajesh Enterprises",
+    "account_type": "corporate_current",
+    "risk_rating": "low",
+    "monthly_avg_credit": 5000000,
+    "city": "Mumbai"
+  },
+  …
+]
+```
+
+**Get One:**
+```http
+GET /api/accounts/{id}
+
+{
+  "id": "ACC-001",
+  "name": "Rajesh Enterprises",
+  …
+}
+```
+
+---
+
+### Real-Time Events (SSE)
+
+**Subscribe:**
+```javascript
+const eventSource = new EventSource('/api/events/stream');
+eventSource.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log('Transaction scored:', data);
+};
+```
+
+**Event Format:**
+```json
+{
+  "type": "transaction_scored",
+  "pre_txn_id": "PRE-ABC123",
+  "from_account": "ACC-001",
+  "to_account": "ACC-011",
+  "amount": 500000,
+  "device_name": "iPhone (iOS 17.4)",
+  "geo_location": "12.9716,77.5946",
+  "score": 25,
+  "decision": "approve",
+  "scored_at": "2026-05-01T10:30:00.000Z"
+}
+```
+
+---
+
+## Testing
+
+See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for comprehensive testing scenarios:
+
+1. **Real-Time GPay** - Device detection & geo-location
+2. **MFA Biometrics** - Fingerprint & face recognition
+3. **Circular Transfers** - Ring detection (ACC-021→024→021)
+4. **Layering** - Multi-hop patterns (ACC-025→028)
+5. **Structuring** - Small amounts (ACC-029: 4x ₹95K)
+6. **Account Patterns** - Risk-based decisions per account
+
+**Quick Test:**
+```bash
+cd apps/api
+pytest tests/  # All tests pass (36/36)
+```
+
+---
+
+## Deployment
+
+### Render Blueprint
+
+**File:** `render.yaml`
+
+```yaml
+services:
+  - type: web
+    name: chakravyuh-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://…
+  
+  - type: web
+    name: chakravyuh-web
+    runtime: node
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://chakravyuh-api-xxxx.onrender.com
+```
+
+**Deploy:**
+1. Push to GitHub
+2. Render auto-deploys from `render.yaml`
+3. Check status at https://render.com
+
+---
+
+## Performance
+
+- **Pre-txn scoring:** < 100ms (deterministic rules)
+- **Dashboard updates:** Instant (SSE) + 2s fallback (polling)
+- **Device detection:** < 500ms (async Client Hints API)
+- **Geo-location:** ~1-5 seconds (browser geolocation API)
+- **Large datasets:** Paginated (50 items/page)
+
+---
+
+## Roadmap
+
+- [ ] LLM-generated explanations for high-risk flags
+- [ ] Vector embeddings for similar transaction search
+- [ ] ML model training on historical data
+- [ ] Biometric MFA with real hardware integration
+- [ ] Multi-tenant SaaS version
+- [ ] Advanced visualizations (network graphs, heat maps)
+- [ ] Export reports (PDF, CSV)
+
+---
+
+## Contributing
+
+1. Create a feature branch
+2. Make changes
+3. Run tests: `pytest apps/api/tests/`
+4. Submit PR
+
+---
+
+## License
+
+MIT
+
+---
+
+## Support
+
+- **Issues:** GitHub issues
+- **Testing:** See [TESTING_GUIDE.md](./TESTING_GUIDE.md)
+- **Documentation:** See [docs/](./data/docs/)
+
+---
+
+**Built with ❤️ for fraud detection.**
 21. [Technology Stack](#-technology-stack)
 
 ---
