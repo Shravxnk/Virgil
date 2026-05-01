@@ -13,28 +13,42 @@ PG_AVAILABLE = False
 _SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "schema.sql")
 
 
-async def init_db(host: str, port: int, database: str, user: str, password: str) -> None:
-    """Initialise asyncpg connection pool and create tables. Called once at startup."""
+async def init_db(host: str, port: int, database: str, user: str, password: str, database_url: str = "") -> None:
+    """Initialise asyncpg connection pool and create tables. Called once at startup.
+
+    Accepts either a full DATABASE_URL (takes priority) or individual host/port/etc vars.
+    """
     global _pool, PG_AVAILABLE
-    if not password:
-        logger.info("[Chakravyuh] DB_PASSWORD not set — running in file-based mock mode.")
+
+    # DATABASE_URL takes priority (used when connecting to external Render DB)
+    if database_url:
+        dsn = database_url
+    elif password:
+        dsn = None  # use keyword args below
+    else:
+        logger.info("[Chakravyuh] No DB credentials set — running in in-memory mock mode.")
         return
+
     try:
         import asyncio
         import asyncpg  # type: ignore
-        _pool = await asyncio.wait_for(
-            asyncpg.create_pool(
-                host=host,
-                port=port,
-                database=database,
-                user=user,
-                password=password,
-                min_size=2,
-                max_size=10,
-                command_timeout=10,
-            ),
-            timeout=5,
-        )
+
+        pool_kwargs = dict(min_size=2, max_size=10, command_timeout=10)
+        if dsn:
+            # Render external DB requires SSL
+            pool_kwargs["ssl"] = "require"
+            _pool = await asyncio.wait_for(
+                asyncpg.create_pool(dsn=dsn, **pool_kwargs),
+                timeout=10,
+            )
+        else:
+            _pool = await asyncio.wait_for(
+                asyncpg.create_pool(
+                    host=host, port=port, database=database,
+                    user=user, password=password, **pool_kwargs,
+                ),
+                timeout=5,
+            )
         # Verify connection is actually usable before marking PG as available
         async with _pool.acquire() as conn:
             await conn.fetchval("SELECT 1")
