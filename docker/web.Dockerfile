@@ -26,8 +26,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
+# PORT is injected by Render (default 10000) or docker-compose (3000).
+# Next.js standalone server reads PORT automatically.
 EXPOSE 3000
-ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]

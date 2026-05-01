@@ -62,6 +62,7 @@ class ExecutiveDashboardResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
 
     total_fraud_detected: float
+    total_fraud_prevented: float
     active_cases: int
     false_positive_rate: float
     detection_rate: float

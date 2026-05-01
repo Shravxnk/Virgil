@@ -20,16 +20,20 @@ async def init_db(host: str, port: int, database: str, user: str, password: str)
         logger.info("[Chakravyuh] DB_PASSWORD not set — running in file-based mock mode.")
         return
     try:
+        import asyncio
         import asyncpg  # type: ignore
-        _pool = await asyncpg.create_pool(
-            host=host,
-            port=port,
-            database=database,
-            user=user,
-            password=password,
-            min_size=2,
-            max_size=10,
-            command_timeout=10,
+        _pool = await asyncio.wait_for(
+            asyncpg.create_pool(
+                host=host,
+                port=port,
+                database=database,
+                user=user,
+                password=password,
+                min_size=2,
+                max_size=10,
+                command_timeout=10,
+            ),
+            timeout=5,
         )
         # Verify connection is actually usable before marking PG as available
         async with _pool.acquire() as conn:

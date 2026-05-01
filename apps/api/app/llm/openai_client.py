@@ -1,8 +1,12 @@
 """OpenAI client wrapper for the LLM-backed explanation layer."""
 
+import logging
+
 from openai import OpenAI
 
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 _client: OpenAI | None = None
 
@@ -13,7 +17,7 @@ def get_openai_client() -> OpenAI | None:
     if not settings.openai_api_key or settings.openai_api_key.startswith("sk-your"):
         return None
     if _client is None:
-        _client = OpenAI(api_key=settings.openai_api_key)
+        _client = OpenAI(api_key=settings.openai_api_key, timeout=15.0)
     return _client
 
 
@@ -23,19 +27,25 @@ def chat_completion(
     temperature: float = 0.3,
     max_tokens: int = 1024,
 ) -> str | None:
-    """Send a chat completion request to OpenAI. Returns None if API key is not configured."""
+    """Send a chat completion request to OpenAI. Returns None if API key is not configured or on error."""
     client = get_openai_client()
     if client is None:
         return None
 
-    settings = get_settings()
-    response = client.chat.completions.create(
-        model=settings.openai_model,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=temperature,
-        max_tokens=max_tokens,
-    )
-    return response.choices[0].message.content
+    try:
+        settings = get_settings()
+        response = client.chat.completions.create(
+            model=settings.openai_model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        if response.choices:
+            return response.choices[0].message.content
+        return None
+    except Exception as exc:
+        logger.warning("OpenAI API call failed: %s", exc)
+        return None

@@ -106,6 +106,33 @@ async def submit_pre_txn(
 ) -> str:
     """Insert a pending transaction.  Returns the generated pre_txn id."""
     pre_id = f"PRE-{uuid.uuid4().hex[:8].upper()}"
+    now = datetime.now(timezone.utc).isoformat()
+
+    entry = {
+        "id": pre_id,
+        "from_account": from_account,
+        "to_account": to_account,
+        "amount": amount,
+        "currency": currency,
+        "txn_type": txn_type,
+        "channel": channel,
+        "device_id": device_id,
+        "device_known": device_known,
+        "ip_address": ip_address,
+        "geo_location": geo_location,
+        "upi_ref": upi_ref,
+        "risk_score": None,
+        "decision": None,
+        "risk_signals": {},
+        "scored_at": None,
+        "completed": False,
+        "created_at": now,
+    }
+
+    # Always store in runtime memory
+    from app.db.repositories.runtime_store import store_pre_txn
+    store_pre_txn(entry)
+
     if connection.PG_AVAILABLE:
         pool = connection.get_pool()
         async with pool.acquire() as conn:
@@ -127,6 +154,13 @@ async def score_pre_txn(
     risk_signals: dict,
 ) -> None:
     """Update a pre-txn record with the ML decision."""
+    from app.db.repositories.runtime_store import update_pre_txn
+    update_pre_txn(pre_id, {
+        "risk_score": risk_score,
+        "decision": decision,
+        "risk_signals": risk_signals,
+        "scored_at": datetime.now(timezone.utc).isoformat(),
+    })
     if not connection.PG_AVAILABLE:
         return
     pool = connection.get_pool()
@@ -142,6 +176,8 @@ async def score_pre_txn(
 
 async def complete_pre_txn(pre_id: str) -> None:
     """Mark a pre-txn entry as completed (transaction executed)."""
+    from app.db.repositories.runtime_store import update_pre_txn
+    update_pre_txn(pre_id, {"completed": True})
     if not connection.PG_AVAILABLE:
         return
     pool = connection.get_pool()
@@ -152,6 +188,11 @@ async def complete_pre_txn(pre_id: str) -> None:
 
 
 async def get_pre_txn(pre_id: str) -> Optional[dict]:
+    # Check runtime store first — always available
+    from app.db.repositories.runtime_store import get_pre_txn_entry
+    runtime = get_pre_txn_entry(pre_id)
+    if runtime:
+        return runtime
     if not connection.PG_AVAILABLE:
         return None
     pool = connection.get_pool()
@@ -164,27 +205,46 @@ async def get_pre_txn(pre_id: str) -> Optional[dict]:
 
 async def get_manual_review_queue(limit: int = 50) -> list[dict]:
     """Return all pre-transactions that were scored as manual_review and not yet resolved."""
-    if not connection.PG_AVAILABLE:
-        return []
-    pool = connection.get_pool()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            """SELECT * FROM pre_txn_queue
-               WHERE decision = 'manual_review'
-               AND completed = FALSE
-               ORDER BY created_at DESC
-               LIMIT $1""",
-            limit,
-        )
-    return [_pre_txn_row_to_dict(r) for r in rows]
+    if connection.PG_AVAILABLE:
+        pool = connection.get_pool()
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """SELECT * FROM pre_txn_queue
+                   WHERE decision = 'manual_review'
+                   AND completed = FALSE
+                   ORDER BY created_at DESC
+                   LIMIT $1""",
+                limit,
+            )
+        if rows:
+            return [_pre_txn_row_to_dict(r) for r in rows]
+    # Fall back to runtime store
+    from app.db.repositories.runtime_store import list_manual_review_queue
+    return list_manual_review_queue(limit)
 
 
 async def resolve_manual_review(pre_id: str, analyst_decision: str, analyst_note: str = "") -> bool:
     """Analyst approves or rejects a manual_review transaction.
     analyst_decision: 'approved' | 'rejected'
     Returns True if record was updated."""
+    from app.db.repositories.runtime_store import get_pre_txn_entry, update_pre_txn
+    # Always update runtime store
+    entry = get_pre_txn_entry(pre_id)
+    if entry and entry.get("decision") == "manual_review" and not entry.get("completed"):
+        update_pre_txn(pre_id, {
+            "completed": True,
+            "decision": analyst_decision,
+            "risk_signals": {
+                **(entry.get("risk_signals") or {}),
+                "analyst_note": analyst_note,
+                "resolved_at": datetime.now(timezone.utc).isoformat(),
+            },
+        })
+        if not connection.PG_AVAILABLE:
+            return True
+
     if not connection.PG_AVAILABLE:
-        return False
+        return entry is not None
     pool = connection.get_pool()
     # completed=TRUE means resolved (either way), decision updated to analyst outcome
     async with pool.acquire() as conn:

@@ -1,0 +1,95 @@
+# ==============================================================================
+# CHAKRAVYUH — Complete Requirements
+# ==============================================================================
+#
+# Python: 3.11 or 3.12
+# Node:   18+ (LTS recommended)
+#
+# Quick start:
+#   pip install -r requirements.txt
+#   cd apps/web && npm install
+# ==============================================================================
+
+
+# ── FastAPI core ──────────────────────────────────────────────────────────────
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+python-multipart==0.0.9
+
+# ── Pydantic / settings ───────────────────────────────────────────────────────
+pydantic==2.6.1
+pydantic-settings==2.1.0
+
+# ── Database (PostgreSQL async driver) ───────────────────────────────────────
+asyncpg==0.29.0
+
+# ── OpenAI (LLM explainer + scenario generation) ─────────────────────────────
+openai==1.12.0
+
+# ── Graph analysis ────────────────────────────────────────────────────────────
+networkx==3.2.1
+
+# ── Vector store (ChromaDB — optional, requires Visual C++ 14+ on Windows) ───
+# chromadb==0.4.22
+# To install: pip install chromadb
+# The API falls back gracefully if ChromaDB is not present.
+
+# ── PDF report generation ─────────────────────────────────────────────────────
+reportlab==4.1.0
+
+# ── HTTP client (internal API calls, seed scripts) ───────────────────────────
+httpx==0.27.0
+
+# ── Numerics ──────────────────────────────────────────────────────────────────
+numpy==1.26.4
+
+# ── Environment / config ─────────────────────────────────────────────────────
+python-dotenv==1.0.1
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest==8.0.1
+pytest-asyncio==0.23.5
+
+# ── Linting (optional dev tool) ───────────────────────────────────────────────
+# ruff>=0.3.0
+
+
+# ==============================================================================
+# NODE / NPM (frontend + scripts)
+# ==============================================================================
+#
+# Install with:
+#   cd apps/web && npm install
+#
+# Key packages (managed by apps/web/package.json):
+#   next@14.1.0
+#   react@18 + react-dom@18
+#   framer-motion@11
+#   recharts@2
+#   reactflow@11
+#   lucide-react@0.316
+#   @radix-ui/* (tabs, dialog, select, tooltip, progress, avatar, scroll-area …)
+#   next-themes@0.2
+#   tailwindcss@3 + tailwindcss-animate
+#   typescript@5
+#   eslint + eslint-config-next
+# ==============================================================================
+
+
+# ==============================================================================
+# ENVIRONMENT VARIABLES  (.env at project root)
+# ==============================================================================
+#
+# DB_HOST=localhost
+# DB_PORT=5432
+# DB_NAME=chakravyuh
+# DB_USER=postgres
+# DB_PASSWORD=yourpassword
+#
+# OPENAI_API_KEY=sk-...
+#
+# NEXT_PUBLIC_API_URL=http://localhost:8000   (or your network IP)
+#
+# Optional:
+# CHROMA_PERSIST_DIR=./chroma_db
+# ==============================================================================

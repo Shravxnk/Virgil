@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # Ensure project root is in path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from app.api.routes import alerts, cases, dashboard, feedback, graph, reports, risk, scenarios, transactions
+from app.api.routes import alerts, cases, compliance, dashboard, feedback, graph, reports, risk, scenarios, transactions
 from app.config import get_settings
 
 
@@ -101,7 +101,7 @@ async def lifespan(app: FastAPI):
     # ① Always seed runtime store (works even without PostgreSQL)
     try:
         from app.core.data_generator import generate_seed_data
-        from app.db.repositories.runtime_store import store_alert, store_case, store_transaction
+        from app.db.repositories.runtime_store import store_alert, store_case, store_transaction, store_profile
         _seed = generate_seed_data()
         for _a in _seed["alerts"]:
             store_alert(_a)
@@ -109,7 +109,9 @@ async def lifespan(app: FastAPI):
             store_case(_c)
         for _t in _seed["transactions"]:
             store_transaction(_t)
-        print(f"[Chakravyuh] Runtime store seeded: {len(_seed['alerts'])} alerts, {len(_seed['cases'])} cases, {len(_seed['transactions'])} txns.")
+        for _p in _seed.get("profiles", []):
+            store_profile(_p)
+        print(f"[Chakravyuh] Runtime store seeded: {len(_seed['alerts'])} alerts, {len(_seed['cases'])} cases, {len(_seed['transactions'])} txns, {len(_seed.get('profiles', []))} profiles.")
     except Exception as _e:
         print(f"[Chakravyuh] Runtime store seeding failed: {_e}")
     # ② PostgreSQL (optional — failures do not affect runtime store)
@@ -148,14 +150,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-_cors_origins = list({settings.frontend_url, "http://localhost:3000"})
-if settings.cors_origins:
-    _cors_origins += [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -170,6 +168,7 @@ app.include_router(dashboard.router, prefix="/api")
 app.include_router(feedback.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")
 app.include_router(scenarios.router, prefix="/api")
+app.include_router(compliance.router, prefix="/api")
 
 
 @app.get("/health")

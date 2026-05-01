@@ -15,6 +15,7 @@ export default function AnalystDashboardPage() {
   const [dashboard, setDashboard] = useState<AnalystDashboardResponse | null>(null);
   const [cases, setCases] = useState<CaseListResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -25,8 +26,10 @@ export default function AnalystDashboardPage() {
         ]);
         setDashboard(dashData);
         setCases(caseData);
+        setError(null);
       } catch (e) {
         console.error('Failed to load dashboard', e);
+        setError('Failed to load dashboard. Is the backend running?');
       } finally {
         setLoading(false);
       }
@@ -36,12 +39,25 @@ export default function AnalystDashboardPage() {
     return () => clearInterval(id);
   }, []);
 
-  if (loading || !dashboard) {
+  if (loading) {
     return (
       <>
         <Header title="Analyst Dashboard" />
         <div className="p-6">
           <DashboardSkeleton />
+        </div>
+      </>
+    );
+  }
+
+  if (error || !dashboard) {
+    return (
+      <>
+        <Header title="Analyst Dashboard" />
+        <div className="p-6">
+          <div className="rounded p-6 text-center" style={{ border: '1px solid #EF444430', backgroundColor: '#EF444410' }}>
+            <p className="text-sm font-medium" style={{ color: '#EF4444' }}>{error ?? 'Failed to load dashboard data.'}</p>
+          </div>
         </div>
       </>
     );
@@ -57,7 +73,6 @@ export default function AnalystDashboardPage() {
             title="Total Alerts"
             value={dashboard.total_alerts}
             icon={AlertTriangle}
-            trend={{ value: 12, label: 'vs last week' }}
           />
           <RiskScoreCard
             title="Critical Alerts"
@@ -74,7 +89,6 @@ export default function AnalystDashboardPage() {
             title="Resolved Today"
             value={dashboard.resolved_today}
             icon={CheckCircle2}
-            trend={{ value: 8, label: 'vs yesterday' }}
           />
         </div>
 

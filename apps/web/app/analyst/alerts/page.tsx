@@ -2,21 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/header';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { DashboardSkeleton } from '@/components/shared/loading-skeleton';
+import { SeverityBadge, StatusBadge } from '@/components/shared/status-badge';
+import { RiskBadge } from '@/components/shared/risk-badge';
 import { api } from '@/lib/api';
-import { cn, formatCurrency, formatDateTime, severityColor, statusColor } from '@/lib/utils';
+import { formatCurrency, formatDateTime } from '@/lib/utils';
 import { Alert, AlertListResponse } from '@/types';
 import { AlertTriangle, Search, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
@@ -24,20 +14,24 @@ import Link from 'next/link';
 export default function AlertsPage() {
   const [data, setData] = useState<AlertListResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [severity, setSeverity] = useState<string>('all');
   const [status, setStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     async function load() {
+      setLoading(true);
       try {
         const params: Record<string, string> = {};
         if (severity !== 'all') params.severity = severity;
         if (status !== 'all') params.status = status;
         const result = await api.getAlerts(params);
         setData(result);
+        setError(null);
       } catch (e) {
         console.error('Failed to load alerts', e);
+        setError('Failed to load alerts. Is the backend running?');
       } finally {
         setLoading(false);
       }
@@ -57,64 +51,70 @@ export default function AlertsPage() {
     );
   });
 
+  const selectStyle = {
+    backgroundColor: '#111827',
+    border: '1px solid #1E2D45',
+    color: '#F0F4FF',
+    borderRadius: 4,
+    padding: '6px 12px',
+    fontSize: 12,
+    outline: 'none',
+  };
+
   return (
     <>
       <Header title="Alert Inbox" />
       <div className="p-6 space-y-4">
         {/* Filters */}
         <div className="flex flex-wrap gap-3">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: '#4A5F80' }} />
+            <input
               placeholder="Search alerts..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              style={{ ...selectStyle, paddingLeft: 32, width: 240 }}
             />
           </div>
-          <Select value={severity} onValueChange={setSeverity}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Severity" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Severities</SelectItem>
-              <SelectItem value="critical">Critical</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="new">New</SelectItem>
-              <SelectItem value="investigating">Investigating</SelectItem>
-              <SelectItem value="escalated">Escalated</SelectItem>
-              <SelectItem value="resolved">Resolved</SelectItem>
-            </SelectContent>
-          </Select>
+          <select value={severity} onChange={(e) => setSeverity(e.target.value)} style={selectStyle}>
+            <option value="all">All Severities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <select value={status} onChange={(e) => setStatus(e.target.value)} style={selectStyle}>
+            <option value="all">All Statuses</option>
+            <option value="new">New</option>
+            <option value="investigating">Investigating</option>
+            <option value="escalated">Escalated</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          {data && (
+            <span className="ml-auto text-xs font-mono self-center" style={{ color: '#8899BB' }}>
+              {filtered?.length ?? 0} / {data.total} alerts
+            </span>
+          )}
         </div>
 
         {loading ? (
           <DashboardSkeleton />
+        ) : error ? (
+          <div className="rounded p-8 text-center" style={{ border: '1px solid #EF444430', backgroundColor: '#EF444410' }}>
+            <AlertTriangle className="h-8 w-8 mx-auto mb-3" style={{ color: '#EF4444' }} />
+            <p className="text-sm font-medium" style={{ color: '#EF4444' }}>{error}</p>
+          </div>
         ) : !filtered || filtered.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <AlertTriangle className="h-12 w-12 text-muted-foreground/40 mb-3" />
-              <p className="text-sm text-muted-foreground">No alerts match your filters</p>
-            </CardContent>
-          </Card>
+          <div className="rounded p-12 text-center" style={{ border: '1px solid #1E2D45', backgroundColor: '#111827' }}>
+            <AlertTriangle className="h-10 w-10 mx-auto mb-3" style={{ color: '#1E2D45' }} />
+            <p className="text-xs" style={{ color: '#8899BB' }}>No alerts match your filters</p>
+          </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-220px)]">
-            <div className="space-y-2">
-              {filtered.map((alert) => (
-                <AlertRow key={alert.id} alert={alert} />
-              ))}
-            </div>
-          </ScrollArea>
+          <div className="space-y-2">
+            {filtered.map((alert) => (
+              <AlertRow key={alert.id} alert={alert} />
+            ))}
+          </div>
         )}
       </div>
     </>
@@ -123,49 +123,43 @@ export default function AlertsPage() {
 
 function AlertRow({ alert }: { alert: Alert }) {
   return (
-    <Card className="hover:border-primary/30 transition-colors">
-      <CardContent className="flex items-center gap-4 py-4">
-        <div
-          className={cn(
-            'flex h-12 w-12 items-center justify-center rounded-lg text-lg font-bold',
-            alert.risk_score >= 80
-              ? 'bg-red-500/10 text-red-600'
-              : alert.risk_score >= 60
-              ? 'bg-orange-500/10 text-orange-600'
-              : alert.risk_score >= 30
-              ? 'bg-yellow-500/10 text-yellow-600'
-              : 'bg-green-500/10 text-green-600',
-          )}
-        >
-          {alert.risk_score}
+    <div
+      className="flex items-center gap-4 rounded px-4 py-3 transition-colors cursor-pointer"
+      style={{ backgroundColor: '#111827', border: '1px solid #1E2D45' }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLDivElement).style.backgroundColor = '#1A2235';
+        (e.currentTarget as HTMLDivElement).style.borderLeftColor = '#3B82F6';
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLDivElement).style.backgroundColor = '#111827';
+        (e.currentTarget as HTMLDivElement).style.borderLeftColor = '#1E2D45';
+      }}
+    >
+      <RiskBadge score={alert.risk_score} size="sm" showLabel={false} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="text-[10px] font-mono" style={{ color: '#4A5F80' }}>{alert.id}</span>
+          <SeverityBadge value={alert.severity} />
+          <StatusBadge value={alert.status} />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-xs font-mono text-muted-foreground">{alert.id}</span>
-            <Badge className={cn('text-[10px]', severityColor(alert.severity))}>
-              {alert.severity}
-            </Badge>
-            <Badge variant="outline" className={cn('text-[10px]', statusColor(alert.status))}>
-              {alert.status}
-            </Badge>
-          </div>
-          <p className="text-sm font-medium truncate">{alert.title}</p>
-          <p className="text-xs text-muted-foreground">
-            {alert.account_name} · {formatCurrency(alert.amount)} · {alert.alert_type}
-          </p>
-        </div>
-        <div className="text-right shrink-0">
-          <p className="text-xs text-muted-foreground">{formatDateTime(alert.timestamp)}</p>
-          {alert.case_id && (
-            <Link href={`/analyst/cases/${alert.case_id}`}>
-              <Button variant="ghost" size="sm" className="mt-1 h-7 text-xs gap-1">
-                <ExternalLink className="h-3 w-3" />
-                {alert.case_id}
-              </Button>
-            </Link>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        <p className="text-xs font-medium truncate" style={{ color: '#F0F4FF' }}>{alert.title}</p>
+        <p className="text-[11px]" style={{ color: '#8899BB' }}>
+          {alert.account_name} · {formatCurrency(alert.amount)} · {alert.alert_type}
+        </p>
+      </div>
+      <div className="text-right shrink-0">
+        <p className="text-[10px] font-mono" style={{ color: '#4A5F80' }}>{formatDateTime(alert.timestamp)}</p>
+        {alert.case_id && (
+          <Link
+            href={`/analyst/cases/${alert.case_id}`}
+            className="flex items-center gap-1 text-[10px] mt-1 justify-end"
+            style={{ color: '#60A5FA' }}
+          >
+            <ExternalLink className="h-3 w-3" />
+            {alert.case_id}
+          </Link>
+        )}
+      </div>
+    </div>
   );
 }

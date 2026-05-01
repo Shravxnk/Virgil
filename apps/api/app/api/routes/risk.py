@@ -1,5 +1,7 @@
 """Risk scoring routes."""
 
+import asyncio
+
 from fastapi import APIRouter, Query
 
 from app.llm.explainer import generate_alert_explanation
@@ -11,16 +13,15 @@ router = APIRouter(prefix="/risk", tags=["Risk Scoring"])
 
 @router.get("/score", response_model=RiskScoreResponse)
 async def get_risk_score(transaction_id: str = Query(..., description="Transaction ID to score")):
-    """Score a transaction for fraud risk. Returns risk score, decision, and reason codes.
-    Explanation is omitted for speed — fetch it via /risk/explain if needed."""
-    return score_transaction(transaction_id)
+    """Score a transaction for fraud risk."""
+    return await asyncio.to_thread(score_transaction, transaction_id)
 
 
 @router.get("/explain")
 async def explain_risk_score(transaction_id: str = Query(..., description="Transaction ID to explain")):
     """Generate an AI explanation for a transaction's risk score. Slower — calls OpenAI."""
     import asyncio
-    result = score_transaction(transaction_id)
+    result = await asyncio.to_thread(score_transaction, transaction_id)
     alert_data = {
         "id": f"LIVE-{transaction_id}",
         "alert_type": "pre_transaction_scoring",

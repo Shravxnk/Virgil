@@ -219,22 +219,27 @@ def _generate_profile_with_openai(account_id: str) -> dict | None:
 
 
 def get_profile_by_account(account_id: str) -> dict | None:
-    # 1. Check static JSON
-    for profile in load_user_profiles():
-        if profile.get("account_id", profile.get("id")) == account_id:
-            return profile
-    # 2. Check runtime-generated cache
+    # 1. Check runtime-generated cache (seeded from data_generator on startup)
     from app.db.repositories.runtime_store import get_profile, store_profile
     cached = get_profile(account_id)
     if cached:
         return cached
-    # 3. Try OpenAI, fall back to deterministic generator
-    profile = _generate_profile_with_openai(account_id) or _generate_profile_fallback(account_id)
+    # 2. Check static JSON
+    for profile in load_user_profiles():
+        if profile.get("account_id", profile.get("id")) == account_id:
+            store_profile(profile)
+            return profile
+    # 3. Deterministic fallback (no LLM call — fast)
+    profile = _generate_profile_fallback(account_id)
     store_profile(profile)
     return profile
 
 
 def get_devices_for_account(account_id: str) -> list[dict]:
+    from app.db.repositories.runtime_store import get_devices
+    cached = get_devices(account_id)
+    if cached:
+        return cached
     return [d for d in load_devices() if d["account_id"] == account_id]
 
 

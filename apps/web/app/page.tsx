@@ -1,37 +1,86 @@
+'use client';
+
 import Link from 'next/link';
 import { Shield, Eye, BarChart3, FlaskConical, ArrowRight, Lock, Zap, Network, Brain } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#f7f9fc] flex flex-col">
+    <div className="min-h-screen hex-grid-bg flex flex-col" style={{ backgroundColor: '#0A0F1E' }}>
 
       {/* Top Nav */}
-      <nav className="sticky top-0 z-10 bg-white border-b px-6 h-14 flex items-center gap-3 shadow-sm">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
-          <Shield className="h-3.5 w-3.5 text-white" />
+      <nav
+        className="sticky top-0 z-20 px-6 h-14 flex items-center gap-3 backdrop-blur-md"
+        style={{ backgroundColor: '#0A0F1E/80', borderBottom: '1px solid #1E2D45' }}
+      >
+        <div
+          className="flex h-7 w-7 items-center justify-center rounded"
+          style={{ backgroundColor: '#3B82F620', border: '1px solid #3B82F640' }}
+        >
+          <Shield className="h-3.5 w-3.5" style={{ color: '#60A5FA' }} />
         </div>
-        <span className="text-sm font-bold tracking-tight">Chakravyuh</span>
-        <Badge variant="outline" className="text-[10px] text-muted-foreground">v1.2.0</Badge>
+        <span
+          className="text-sm font-bold tracking-wide font-display"
+          style={{ color: '#F0F4FF', letterSpacing: '0.08em' }}
+        >
+          CHAKRAVYUH
+        </span>
+        <span
+          className="text-[10px] font-mono px-2 py-0.5 rounded"
+          style={{ color: '#60A5FA', backgroundColor: '#3B82F615', border: '1px solid #3B82F630' }}
+        >
+          v1.2.0
+        </span>
+        <div className="ml-auto flex items-center gap-1.5">
+          <span
+            className="flex items-center gap-1.5 text-[11px] font-mono px-3 py-1.5 rounded"
+            style={{ backgroundColor: '#22C55E15', border: '1px solid #22C55E30', color: '#22C55E' }}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+            SYSTEM LIVE
+          </span>
+        </div>
       </nav>
 
       {/* Hero */}
-      <div className="flex flex-col items-center justify-center text-center py-20 px-6">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary mb-5 shadow-lg">
-          <Shield className="h-8 w-8 text-white" />
+      <div className="flex flex-col items-center justify-center text-center py-24 px-6">
+        {/* Glyph */}
+        <div className="relative mb-8">
+          <div
+            className="flex h-20 w-20 items-center justify-center rounded"
+            style={{
+              backgroundColor: '#3B82F610',
+              border: '1px solid #3B82F640',
+              boxShadow: '0 0 40px #3B82F625, 0 0 80px #3B82F610',
+            }}
+          >
+            <Shield className="h-10 w-10" style={{ color: '#60A5FA' }} />
+          </div>
+          <div
+            className="absolute inset-0 rounded animate-ping"
+            style={{ border: '1px solid #3B82F630', animationDuration: '2s' }}
+          />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Chakravyuh</h1>
-        <p className="text-muted-foreground mt-2 max-w-md text-sm leading-relaxed">
+
+        <h1
+          className="text-5xl font-bold font-display tracking-tight mb-4"
+          style={{ color: '#F0F4FF', letterSpacing: '-0.02em' }}
+        >
+          Chakravyuh
+        </h1>
+        <p className="text-sm leading-relaxed max-w-xl mb-3" style={{ color: '#8899BB' }}>
           AI-powered banking fraud intelligence platform — real-time risk scoring, AML graph analysis,
           LLM-powered investigation, and FIU-IND-compliant reporting.
         </p>
         <div className="flex flex-wrap gap-2 justify-center mt-4">
-          <Badge variant="secondary">Pre-Transaction Prevention</Badge>
-          <Badge variant="secondary">Graph Intelligence</Badge>
-          <Badge variant="secondary">LLM Investigation</Badge>
-          <Badge variant="secondary">FIU Reporting</Badge>
+          {['Pre-Transaction Prevention', 'Graph Intelligence', 'LLM Investigation', 'FIU Reporting'].map(tag => (
+            <span
+              key={tag}
+              className="text-[11px] font-mono px-3 py-1 rounded"
+              style={{ color: '#60A5FA', backgroundColor: '#3B82F610', border: '1px solid #3B82F630' }}
+            >
+              {tag}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -40,110 +89,146 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full max-w-4xl">
 
           {/* Analyst Console */}
-          <Card className="shadow-sm hover:shadow-md transition-shadow bg-white">
-            <CardHeader className="pb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 mb-2">
-                <Eye className="h-5 w-5 text-blue-600" />
+          <div
+            className="rounded p-5 flex flex-col gap-4 relative overflow-hidden group transition-all hover:-translate-y-0.5"
+            style={{ backgroundColor: '#111827', border: '1px solid #1E2D45' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#3B82F660'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#1E2D45'; }}
+          >
+            <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t" style={{ background: 'linear-gradient(90deg, #3B82F6, transparent)' }} />
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded" style={{ backgroundColor: '#3B82F615', border: '1px solid #3B82F630' }}>
+                <Eye className="h-4 w-4" style={{ color: '#60A5FA' }} />
               </div>
-              <CardTitle className="text-base">Analyst Console</CardTitle>
-              <CardDescription className="text-xs leading-relaxed">
-                Alert inbox, case investigation, manual review queue, pre-transaction analytics,
-                and AI-generated fraud explanations.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-2">
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li className="flex items-center gap-1.5"><Lock className="h-3 w-3" />Alert inbox with risk ranking</li>
-                <li className="flex items-center gap-1.5"><Network className="h-3 w-3" />Case graph investigation</li>
-                <li className="flex items-center gap-1.5"><Brain className="h-3 w-3" />LLM-generated explanations</li>
-                <li className="flex items-center gap-1.5"><Zap className="h-3 w-3" />Pre-transaction analytics</li>
-              </ul>
-              <Link href="/analyst" className="block">
-                <Button className="w-full mt-2 gap-2">
-                  Open Analyst Console <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+              <div>
+                <p className="text-sm font-semibold font-display" style={{ color: '#F0F4FF' }}>Analyst Console</p>
+                <p className="text-[11px]" style={{ color: '#8899BB' }}>Threat detection workspace</p>
+              </div>
+            </div>
+            <ul className="space-y-2">
+              {[
+                [Lock, 'Alert inbox with risk ranking'],
+                [Network, 'Case graph investigation'],
+                [Brain, 'LLM-generated explanations'],
+                [Zap, 'Pre-transaction analytics'],
+              ].map(([Icon, text]: any) => (
+                <li key={text} className="flex items-center gap-2 text-[11px]" style={{ color: '#8899BB' }}>
+                  <Icon className="h-3 w-3 flex-shrink-0" style={{ color: '#3B82F6' }} />
+                  {text}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/analyst"
+              className="flex items-center justify-center gap-2 rounded py-2 text-xs font-semibold transition-all"
+              style={{ backgroundColor: '#3B82F6', color: '#fff' }}
+            >
+              Open Analyst Console <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
 
           {/* Executive Dashboard */}
-          <Card className="shadow-sm hover:shadow-md transition-shadow bg-white">
-            <CardHeader className="pb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 mb-2">
-                <BarChart3 className="h-5 w-5 text-indigo-600" />
+          <div
+            className="rounded p-5 flex flex-col gap-4 relative overflow-hidden group transition-all hover:-translate-y-0.5"
+            style={{ backgroundColor: '#111827', border: '1px solid #1E2D45' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#6366F160'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#1E2D45'; }}
+          >
+            <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t" style={{ background: 'linear-gradient(90deg, #6366F1, transparent)' }} />
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded" style={{ backgroundColor: '#6366F115', border: '1px solid #6366F130' }}>
+                <BarChart3 className="h-4 w-4" style={{ color: '#818CF8' }} />
               </div>
-              <CardTitle className="text-base">Executive Dashboard</CardTitle>
-              <CardDescription className="text-xs leading-relaxed">
-                Enterprise-level KPIs, fraud trend analysis, model health monitoring,
-                and compliance tracking for leadership.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-2">
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li className="flex items-center gap-1.5"><BarChart3 className="h-3 w-3" />Fraud KPIs and trend charts</li>
-                <li className="flex items-center gap-1.5"><Zap className="h-3 w-3" />Model accuracy and precision</li>
-                <li className="flex items-center gap-1.5"><Lock className="h-3 w-3" />Compliance score and SARs</li>
-                <li className="flex items-center gap-1.5"><Network className="h-3 w-3" />Risk category breakdown</li>
-              </ul>
-              <Link href="/executive" className="block">
-                <Button className="w-full mt-2 gap-2" variant="outline">
-                  Open Executive Dashboard <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+              <div>
+                <p className="text-sm font-semibold font-display" style={{ color: '#F0F4FF' }}>Executive Dashboard</p>
+                <p className="text-[11px]" style={{ color: '#8899BB' }}>Enterprise oversight</p>
+              </div>
+            </div>
+            <ul className="space-y-2">
+              {[
+                [BarChart3, 'Fraud KPIs and trend charts'],
+                [Zap, 'Model accuracy and precision'],
+                [Lock, 'Compliance score and SARs'],
+                [Network, 'Risk category breakdown'],
+              ].map(([Icon, text]: any) => (
+                <li key={text} className="flex items-center gap-2 text-[11px]" style={{ color: '#8899BB' }}>
+                  <Icon className="h-3 w-3 flex-shrink-0" style={{ color: '#6366F1' }} />
+                  {text}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/executive"
+              className="flex items-center justify-center gap-2 rounded py-2 text-xs font-semibold transition-all"
+              style={{ backgroundColor: '#1A2235', color: '#818CF8', border: '1px solid #6366F140' }}
+            >
+              Open Executive Dashboard <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
 
-          {/* Test Case Simulation */}
-          <Card className="shadow-sm hover:shadow-md transition-shadow bg-white border-dashed border-2">
-            <CardHeader className="pb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 mb-2">
-                <FlaskConical className="h-5 w-5 text-teal-600" />
+          {/* Demo / Test Simulation */}
+          <div
+            className="rounded p-5 flex flex-col gap-4 relative overflow-hidden group transition-all hover:-translate-y-0.5"
+            style={{ backgroundColor: '#111827', border: '1px dashed #1E2D45' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#14B8A660'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#1E2D45'; }}
+          >
+            <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t" style={{ background: 'linear-gradient(90deg, #14B8A6, transparent)' }} />
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded" style={{ backgroundColor: '#14B8A615', border: '1px solid #14B8A630' }}>
+                <FlaskConical className="h-4 w-4" style={{ color: '#2DD4BF' }} />
               </div>
-              <CardTitle className="text-base">Test Case Simulation</CardTitle>
-              <CardDescription className="text-xs leading-relaxed">
-                Fire all 34 use cases live — pre-transaction scoring, graph detection,
-                analyst workflows, executive metrics, and the learning loop.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-2">
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li className="flex items-center gap-1.5"><Shield className="h-3 w-3" />9 pre-transaction scenarios</li>
-                <li className="flex items-center gap-1.5"><Network className="h-3 w-3" />9 post-transaction / AML cases</li>
-                <li className="flex items-center gap-1.5"><Eye className="h-3 w-3" />7 analyst dashboard flows</li>
-                <li className="flex items-center gap-1.5"><Brain className="h-3 w-3" />Custom transaction builder</li>
-              </ul>
-              <Link href="/analyst/demo" className="block">
-                <Button className="w-full mt-2 gap-2" variant="outline">
-                  Run Test Cases <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+              <div>
+                <p className="text-sm font-semibold font-display" style={{ color: '#F0F4FF' }}>Test Case Simulation</p>
+                <p className="text-[11px]" style={{ color: '#8899BB' }}>Live use-case runner</p>
+              </div>
+            </div>
+            <ul className="space-y-2">
+              {[
+                [Shield, '9 pre-transaction scenarios'],
+                [Network, '9 post-transaction / AML cases'],
+                [Eye, '7 analyst dashboard flows'],
+                [Brain, 'Custom transaction builder'],
+              ].map(([Icon, text]: any) => (
+                <li key={text} className="flex items-center gap-2 text-[11px]" style={{ color: '#8899BB' }}>
+                  <Icon className="h-3 w-3 flex-shrink-0" style={{ color: '#14B8A6' }} />
+                  {text}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/demo"
+              className="flex items-center justify-center gap-2 rounded py-2 text-xs font-semibold transition-all"
+              style={{ backgroundColor: '#1A2235', color: '#2DD4BF', border: '1px solid #14B8A640' }}
+            >
+              Run Test Cases <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
 
         </div>
 
-        {/* Quick stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mt-8">
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mt-6">
           {[
-            { label: 'Use Cases', value: '34', sub: 'across 5 groups' },
-            { label: 'API Endpoints', value: '12+', sub: 'REST API' },
-            { label: 'Risk Signals', value: '5', sub: 'behavioral dimensions' },
-            { label: 'Intelligence', value: 'RAG + ChromaDB', sub: 'PostgreSQL' },
+            { label: 'Use Cases', value: '34', sub: 'across 5 groups', color: '#3B82F6' },
+            { label: 'API Endpoints', value: '12+', sub: 'REST API', color: '#6366F1' },
+            { label: 'Risk Signals', value: '5', sub: 'behavioral dimensions', color: '#F59E0B' },
+            { label: 'Intelligence', value: 'RAG', sub: 'ChromaDB + PostgreSQL', color: '#14B8A6' },
           ].map(s => (
-            <div key={s.label} className="rounded-lg border bg-white px-4 py-3 text-center shadow-sm">
-              <p className="text-xl font-bold text-primary">{s.value}</p>
-              <p className="text-xs font-medium">{s.label}</p>
-              <p className="text-[10px] text-muted-foreground">{s.sub}</p>
+            <div
+              key={s.label}
+              className="rounded px-4 py-3 text-center relative overflow-hidden"
+              style={{ backgroundColor: '#111827', border: '1px solid #1E2D45' }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${s.color}, transparent)` }} />
+              <p className="text-xl font-bold font-display" style={{ color: s.color }}>{s.value}</p>
+              <p className="text-xs font-medium" style={{ color: '#F0F4FF' }}>{s.label}</p>
+              <p className="text-[10px]" style={{ color: '#8899BB' }}>{s.sub}</p>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="border-t bg-white py-4 text-center text-[11px] text-muted-foreground">
-        Chakravyuh v1.2.0 · Built by Suyash Sawant · Indian Banking Fraud Intelligence
-      </footer>
-
     </div>
   );
 }
+

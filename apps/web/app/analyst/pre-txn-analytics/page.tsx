@@ -1,26 +1,10 @@
+// app/analyst/pre-txn-analytics/page.tsx
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  XCircle,
-  AlertTriangle,
-  Smartphone,
-  CheckCircle2,
-  ShieldAlert,
-  TrendingUp,
-  Activity,
-  RefreshCw,
-  Zap,
-  Clock,
-  Ban,
-} from 'lucide-react';
-import { cn, formatCurrency } from '@/lib/utils';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { RefreshCw } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface PreTxnItem {
   id: string;
@@ -32,500 +16,320 @@ interface PreTxnItem {
   channel: string;
   risk_score: number;
   decision: 'approve' | 'mfa' | 'manual_review' | 'block' | 'pending';
+  risk_signals?: {
+    amount_anomaly?: number;
+    time_anomaly?: number;
+    device_mismatch?: boolean | number;
+    beneficiary_risk?: number;
+    graph_risk?: number;
+    reason_codes?: string[];
+    from_name?: string;
+    to_name?: string;
+  };
   scored_at: string | null;
   completed: boolean;
   created_at: string;
 }
 
-interface QueueResponse {
-  queue: PreTxnItem[];
-  total: number;
-}
-
-const DECISION_CONFIG = {
-  block: {
-    label: 'Blocked',
-    color: 'bg-red-100 text-red-700 border-red-200',
-    dot: 'bg-red-500',
-    icon: XCircle,
-    iconColor: 'text-red-500',
-    cardBg: 'bg-red-50 border-red-200',
-  },
-  manual_review: {
-    label: 'Manual Review',
-    color: 'bg-orange-100 text-orange-700 border-orange-200',
-    dot: 'bg-orange-500',
-    icon: AlertTriangle,
-    iconColor: 'text-orange-500',
-    cardBg: 'bg-orange-50 border-orange-200',
-  },
-  mfa: {
-    label: 'MFA Required',
-    color: 'bg-amber-100 text-amber-700 border-amber-200',
-    dot: 'bg-amber-500',
-    icon: Smartphone,
-    iconColor: 'text-amber-500',
-    cardBg: 'bg-amber-50 border-amber-200',
-  },
-  approve: {
-    label: 'Approved',
-    color: 'bg-green-100 text-green-700 border-green-200',
-    dot: 'bg-green-500',
-    icon: CheckCircle2,
-    iconColor: 'text-green-500',
-    cardBg: 'bg-green-50 border-green-200',
-  },
-  pending: {
-    label: 'Pending',
-    color: 'bg-gray-100 text-gray-600 border-gray-200',
-    dot: 'bg-gray-400',
-    icon: Clock,
-    iconColor: 'text-gray-400',
-    cardBg: 'bg-gray-50 border-gray-200',
-  },
+const DECISION_CFG = {
+  approve: { label: 'APPROVE', color: 'var(--risk-low)', bg: 'rgba(22,163,74,0.12)', border: 'rgba(22,163,74,0.30)' },
+  mfa: { label: 'MFA', color: 'var(--risk-medium)', bg: 'rgba(217,119,6,0.10)', border: 'rgba(217,119,6,0.30)' },
+  manual_review: { label: 'REVIEW', color: 'var(--risk-high)', bg: 'rgba(234,88,12,0.10)', border: 'rgba(234,88,12,0.30)' },
+  block: { label: 'BLOCK', color: 'var(--risk-critical)', bg: 'rgba(220,38,38,0.12)', border: 'rgba(220,38,38,0.25)' },
+  pending: { label: 'PENDING', color: 'var(--text-muted)', bg: 'rgba(71,85,105,0.12)', border: 'rgba(71,85,105,0.25)' },
 };
 
-const SIGNAL_KEYS = ['amount_anomaly', 'time_anomaly', 'device_mismatch', 'beneficiary_risk', 'graph_risk'] as const;
-const SIGNAL_LABELS: Record<string, string> = {
-  amount_anomaly: 'Amount Anomaly',
-  time_anomaly: 'Time Anomaly',
-  device_mismatch: 'Device Mismatch',
-  beneficiary_risk: 'Beneficiary Risk',
-  graph_risk: 'Graph Risk',
-};
-const SIGNAL_MAX: Record<string, number> = {
-  amount_anomaly: 25, time_anomaly: 15, device_mismatch: 15, beneficiary_risk: 20, graph_risk: 25,
-};
-
-function getRiskColor(score: number) {
-  if (score >= 80) return 'text-red-600 font-bold';
-  if (score >= 60) return 'text-orange-600 font-bold';
-  if (score >= 30) return 'text-amber-600 font-semibold';
-  return 'text-green-600';
+function fmtIN(n: number) {
+  return 'Rs.' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n);
 }
 
-function getRiskBarColor(score: number) {
-  if (score >= 80) return 'bg-red-500';
-  if (score >= 60) return 'bg-orange-500';
-  if (score >= 30) return 'bg-amber-500';
-  return 'bg-green-500';
+function fmtCompact(n: number) {
+  if (n >= 1e7) return 'Rs.' + (n / 1e7).toFixed(1) + 'Cr';
+  if (n >= 1e5) return 'Rs.' + (n / 1e5).toFixed(1) + 'L';
+  return 'Rs.' + new Intl.NumberFormat('en-IN').format(n);
 }
 
-function timeAgo(ts: string) {
-  const diff = Date.now() - new Date(ts).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+function timeAgo(ts: string | null) {
+  if (!ts) return '—';
+  const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  return `${Math.floor(diff / 3600)}h ago`;
 }
+
+function riskColor(score: number) {
+  if (score >= 80) return 'var(--risk-critical)';
+  if (score >= 60) return 'var(--risk-high)';
+  if (score >= 30) return 'var(--risk-medium)';
+  return 'var(--risk-low)';
+}
+
+function RiskRing({ score, size = 24 }: { score: number; size?: number }) {
+  const r = (size - 4) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (score / 100) * circ;
+  const color = riskColor(score);
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--border-dim)" strokeWidth={2.5} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={2.5}
+        strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
+        style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+      />
+    </svg>
+  );
+}
+
+type FilterTab = 'all' | 'block' | 'manual_review' | 'mfa' | 'approve';
 
 export default function PreTxnAnalyticsPage() {
-  const [data, setData] = useState<PreTxnItem[]>([]);
+  const [items, setItems] = useState<PreTxnItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>('all');
-  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(Date.now());
+  const [refreshIn, setRefreshIn] = useState(15);
+  const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countRef = useRef(15);
 
-  const fetchQueue = useCallback(async (showRefresh = false) => {
-    if (showRefresh) setRefreshing(true);
-    else setLoading(true);
+  const loadData = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/transactions/queue?limit=100`);
-      if (res.ok) {
-        const json: QueueResponse = await res.json();
-        setData(json.queue || []);
-      }
+      const data = await api.getPreTxnQueue(50);
+      const raw = (data as { queue?: PreTxnItem[] }).queue
+        ?? (Array.isArray(data) ? (data as PreTxnItem[]) : []);
+      setItems(raw);
+      setLastUpdated(Date.now());
+      countRef.current = 15;
+      setRefreshIn(15);
+    } catch {
+      // use stale data
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchQueue();
-    const id = setInterval(() => fetchQueue(), 15000);
-    return () => clearInterval(id);
-  }, [fetchQueue]);
+    loadData();
+    const tick = setInterval(() => {
+      countRef.current -= 1;
+      setRefreshIn(countRef.current);
+      if (countRef.current <= 0) {
+        loadData();
+      }
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [loadData]);
 
-  // ── Analytics ──────────────────────────────────────────────────────
-  const total = data.length;
-  const blocked = data.filter(d => d.decision === 'block').length;
-  const reviews = data.filter(d => d.decision === 'manual_review').length;
-  const mfa = data.filter(d => d.decision === 'mfa').length;
-  const approved = data.filter(d => d.decision === 'approve').length;
-  const blockRate = total > 0 ? ((blocked / total) * 100).toFixed(1) : '0';
-  const totalAmountBlocked = data
-    .filter(d => d.decision === 'block')
-    .reduce((s, d) => s + d.amount, 0);
-  const avgScore = total > 0
-    ? (data.reduce((s, d) => s + d.risk_score, 0) / total).toFixed(1)
-    : '0';
+  // treat all items as scored — API transactions don't have a `completed` flag
+  const scored = items.filter(i => i.decision && i.decision !== 'pending');
+  const completed = scored.length > 0 ? scored : items; // fall back to all items if none have decisions
+  const counts = {
+    total: items.length,
+    block: items.filter(i => i.decision === 'block').length,
+    manual_review: items.filter(i => i.decision === 'manual_review').length,
+    mfa: items.filter(i => i.decision === 'mfa').length,
+    approve: items.filter(i => i.decision === 'approve').length,
+    pending: items.filter(i => !i.decision || i.decision === 'pending').length,
+  };
+  const fraudPrevented = items.filter(i => i.decision === 'block').reduce((s, i) => s + i.amount, 0);
+  const avgScore = items.length ? items.reduce((s, i) => s + (i.risk_score ?? 0), 0) / items.length : 0;
 
-  const filtered = filter === 'all' ? data : data.filter(d => d.decision === filter);
+  const filteredItems = activeTab === 'all' ? items : items.filter(i => i.decision === activeTab);
 
-  // Decision distribution for bar chart
-  const decisionCounts = [
-    { key: 'block', count: blocked },
-    { key: 'manual_review', count: reviews },
-    { key: 'mfa', count: mfa },
-    { key: 'approve', count: approved },
+  // stacked bar segments
+  const segments = [
+    { key: 'block', pct: counts.total ? (counts.block / counts.total) * 100 : 0, color: 'var(--risk-critical)', label: 'BLOCK' },
+    { key: 'manual_review', pct: counts.total ? (counts.manual_review / counts.total) * 100 : 0, color: 'var(--risk-high)', label: 'REVIEW' },
+    { key: 'mfa', pct: counts.total ? (counts.mfa / counts.total) * 100 : 0, color: 'var(--risk-medium)', label: 'MFA' },
+    { key: 'approve', pct: counts.total ? (counts.approve / counts.total) * 100 : 0, color: 'var(--risk-low)', label: 'APPROVE' },
   ];
-  const maxCount = Math.max(...decisionCounts.map(d => d.count), 1);
 
-  const KPI_CARDS = [
-    {
-      label: 'Total Scored',
-      value: total,
-      icon: Activity,
-      iconColor: 'text-blue-500',
-      bg: 'bg-blue-50',
-      sub: `Avg risk: ${avgScore}/100`,
-    },
-    {
-      label: 'Blocked',
-      value: blocked,
-      icon: Ban,
-      iconColor: 'text-red-500',
-      bg: 'bg-red-50',
-      sub: `${blockRate}% block rate`,
-    },
-    {
-      label: 'Manual Review',
-      value: reviews,
-      icon: AlertTriangle,
-      iconColor: 'text-orange-500',
-      bg: 'bg-orange-50',
-      sub: 'Awaiting analyst',
-    },
-    {
-      label: 'MFA Required',
-      value: mfa,
-      icon: Smartphone,
-      iconColor: 'text-amber-500',
-      bg: 'bg-amber-50',
-      sub: 'Step-up auth sent',
-    },
-    {
-      label: 'Approved',
-      value: approved,
-      icon: CheckCircle2,
-      iconColor: 'text-green-500',
-      bg: 'bg-green-50',
-      sub: 'Passed all checks',
-    },
-    {
-      label: '₹ Blocked',
-      value: `₹${(totalAmountBlocked / 10000000).toFixed(2)}Cr`,
-      icon: ShieldAlert,
-      iconColor: 'text-purple-500',
-      bg: 'bg-purple-50',
-      sub: 'Fraud prevented',
-    },
+  const TABS: { key: FilterTab; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'block', label: 'Block' },
+    { key: 'manual_review', label: 'Review' },
+    { key: 'mfa', label: 'MFA' },
+    { key: 'approve', label: 'Approve' },
   ];
 
   return (
     <>
-      <Header title="Pre-Transaction Fraud Analytics" />
-      <div className="p-6 space-y-6">
+      <Header title="Pre-Transaction Analytics" />
+      <div style={{ background: 'var(--bg-void)', minHeight: 'calc(100vh - 52px)' }}>
 
-        {/* Banner */}
-        <div className="rounded-xl border bg-primary/5 px-5 py-4 flex items-center gap-4">
-          <Zap className="h-5 w-5 text-primary flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">Pre-Transaction Scoring Queue</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Every transaction scored <strong>before money moves</strong>. Showing live decisions from
-              the deterministic fraud engine: Approve / MFA / Manual Review / Block.
-            </p>
-          </div>
-          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <RefreshCw className={cn('h-3 w-3', refreshing && 'animate-spin')} />
-            Auto-refreshing every 15s
+        {/* Auto-refresh banner */}
+        <div style={{ height: 32, display: 'flex', alignItems: 'center', gap: 8, padding: '0 24px', background: 'rgba(37,99,235,0.04)', borderBottom: '1px solid var(--border-dim)' }}>
+          <RefreshCw style={{ width: 12, height: 12, color: 'var(--text-muted)', animation: 'spin 3s linear infinite' }} />
+          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: 'var(--text-muted)' }}>
+            Auto-refreshing every 15s · Last updated {Math.floor((Date.now() - lastUpdated) / 1000)}s ago · Next in {refreshIn}s
           </span>
+          <button onClick={() => loadData()} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: 'var(--brand-light)', padding: '0 4px' }}>
+            Refresh now
+          </button>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-          {KPI_CARDS.map((k) => (
-            <Card key={k.label} className="shadow-sm">
-              <CardContent className="pt-4 pb-3">
-                <div className={cn('inline-flex h-8 w-8 items-center justify-center rounded-lg mb-3', k.bg)}>
-                  <k.icon className={cn('h-4 w-4', k.iconColor)} />
-                </div>
-                <p className="text-2xl font-bold text-foreground leading-none">{k.value}</p>
-                <p className="text-xs font-medium text-foreground mt-1">{k.label}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{k.sub}</p>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Stats — 2-tier command strip */}
+        <div style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-dim)' }}>
+          {/* Tier 1 */}
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-dim)', height: 80 }}>
+            {[
+              { label: 'TOTAL SCORED', value: counts.total, color: 'var(--text-primary)', mono: false },
+              { label: 'BLOCKED', value: counts.block, color: 'var(--risk-critical)', mono: true },
+              { label: 'FRAUD PREVENTED', value: fmtCompact(fraudPrevented), color: 'var(--risk-low)', mono: true },
+            ].map((m, i) => (
+              <div key={m.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 24px', borderLeft: i > 0 ? '1px solid var(--border-dim)' : 'none' }}>
+                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.10em', marginBottom: 6 }}>{m.label}</p>
+                <p style={{ fontFamily: m.mono ? 'JetBrains Mono, monospace' : 'Sora, sans-serif', fontSize: 28, fontWeight: 700, color: m.color, lineHeight: 1 }}>{m.value}</p>
+              </div>
+            ))}
+          </div>
+          {/* Tier 2 */}
+          <div style={{ display: 'flex', height: 48 }}>
+            {[
+              { label: 'MANUAL REVIEW', value: counts.manual_review, color: 'var(--risk-high)' },
+              { label: 'MFA REQUIRED', value: counts.mfa, color: 'var(--risk-medium)' },
+              { label: 'APPROVED', value: counts.approve, color: 'var(--risk-low)' },
+            ].map((m, i) => (
+              <div key={m.label} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, padding: '0 24px', borderLeft: i > 0 ? '1px solid var(--border-dim)' : 'none' }}>
+                <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{m.label}</span>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 14, fontWeight: 600, color: m.color, marginLeft: 'auto' }}>{m.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main 52/48 content */}
+        <div style={{ display: 'grid', gridTemplateColumns: '52fr 48fr', gap: 16, padding: 20 }}>
 
-          {/* Decision Distribution Chart */}
-          <Card className="shadow-sm lg:col-span-1">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                Decision Distribution
-              </CardTitle>
-              <CardDescription className="text-xs">Breakdown of all scoring outcomes</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {decisionCounts.map(({ key, count }) => {
-                const cfg = DECISION_CONFIG[key as keyof typeof DECISION_CONFIG];
-                const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
-                const totalPct = total > 0 ? ((count / total) * 100).toFixed(0) : '0';
-                return (
-                  <div key={key}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <div className={cn('h-2 w-2 rounded-full', cfg.dot)} />
-                        <span className="text-xs text-foreground font-medium">{cfg.label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{totalPct}%</span>
-                        <span className="text-xs font-bold text-foreground w-5 text-right">{count}</span>
-                      </div>
-                    </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className={cn('h-full rounded-full transition-all duration-500', cfg.dot)}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
+          {/* LEFT — Scoring Outcomes */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-dim)', borderRadius: 8, padding: '20px' }}>
+              <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Scoring Outcomes</p>
+
+              {/* Hero stacked bar */}
+              <div style={{ height: 32, borderRadius: 4, overflow: 'hidden', display: 'flex', marginBottom: 16 }}>
+                {segments.map(s => (
+                  <div key={s.key} style={{ width: `${s.pct}%`, background: s.color, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: s.pct > 5 ? undefined : 0, overflow: 'hidden', transition: 'width 0.5s ease' }}>
+                    {s.pct > 8 && <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>{s.label}</span>}
                   </div>
-                );
-              })}
+                ))}
+                {counts.total === 0 && <div style={{ flex: 1, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: 'var(--text-muted)' }}>No data yet</span></div>}
+              </div>
 
-              {/* Score gauge */}
-              <div className="mt-6 pt-4 border-t">
-                <p className="text-xs text-muted-foreground mb-3 font-medium">Average Risk Score</p>
-                <div className="flex items-end gap-3">
-                  <p className={cn('text-4xl font-bold', getRiskColor(parseFloat(avgScore)))}>
-                    {avgScore}
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-1">/ 100</p>
-                </div>
-                <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className={cn('h-full rounded-full transition-all duration-700', getRiskBarColor(parseFloat(avgScore)))}
-                    style={{ width: `${avgScore}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                  <span>Safe &lt;30</span>
-                  <span>MFA 30–60</span>
-                  <span>Review 60–80</span>
-                  <span>Block &gt;80</span>
+              {/* Breakdown list */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {segments.map(s => (
+                  <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
+                    <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'var(--text-secondary)', flex: 1 }}>{s.label}</span>
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: 'var(--text-mono)' }}>{s.pct.toFixed(1)}%</span>
+                    <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: 'var(--text-muted)', background: 'var(--bg-elevated)', border: '1px solid var(--border-dim)', borderRadius: 3, padding: '1px 7px' }}>
+                      {counts[s.key as keyof typeof counts]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Average Risk Score + Thermometer */}
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-dim)', borderRadius: 8, padding: '20px' }}>
+              <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Average Risk Score</p>
+              <p style={{ fontFamily: 'Sora, sans-serif', fontSize: 36, fontWeight: 700, color: riskColor(avgScore), lineHeight: 1, marginBottom: 16 }}>{avgScore.toFixed(1)}</p>
+
+              {/* Thermometer gauge */}
+              <div style={{ position: 'relative', marginBottom: 8 }}>
+                <div style={{ height: 8, borderRadius: 4, background: 'linear-gradient(90deg, #16A34A 0%, #D97706 30%, #EA580C 60%, #DC2626 80%)', position: 'relative' }}>
+                  <div style={{
+                    position: 'absolute', left: `${Math.min(98, avgScore)}%`, top: -4,
+                    width: 2, height: 16, background: '#fff', borderRadius: 1,
+                    boxShadow: '0 0 4px rgba(255,255,255,0.8)', transform: 'translateX(-50%)',
+                    transition: 'left 0.5s ease',
+                  }} />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                {['Safe <30', 'MFA 30-60', 'Review 60-80', 'Block >80'].map(l => (
+                  <span key={l} style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, color: 'var(--text-muted)' }}>{l}</span>
+                ))}
+              </div>
+            </div>
+          </div>
 
-          {/* Transaction Table */}
-          <Card className="shadow-sm lg:col-span-2">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm">Scored Transactions</CardTitle>
-                  <CardDescription className="text-xs mt-0.5">
-                    {filtered.length} of {total} shown
-                  </CardDescription>
-                </div>
-                {/* Filter tabs */}
-                <div className="flex gap-1">
-                  {['all', 'block', 'manual_review', 'mfa', 'approve'].map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setFilter(f)}
-                      className={cn(
-                        'px-2 py-1 rounded text-[11px] font-medium transition-colors',
-                        filter === f
-                          ? 'bg-primary text-white'
-                          : 'text-muted-foreground hover:bg-accent',
-                      )}
-                    >
-                      {f === 'all' ? 'All' : f === 'manual_review' ? 'Review' : f.charAt(0).toUpperCase() + f.slice(1)}
+          {/* RIGHT — Live Queue */}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-dim)', borderRadius: 8, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-dim)' }}>
+              <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Live Queue</p>
+              {/* Filter tabs */}
+              <div style={{ display: 'flex', gap: 4 }}>
+                {TABS.map(tab => {
+                  const cnt = tab.key === 'all' ? items.length : items.filter(i => i.decision === tab.key).length;
+                  const isActive = activeTab === tab.key;
+                  return (
+                    <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
+                      display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 5,
+                      border: `1px solid ${isActive ? 'var(--brand)' : 'var(--border-default)'}`,
+                      background: isActive ? 'var(--brand)' : 'var(--bg-elevated)',
+                      cursor: 'pointer', transition: 'all 0.15s',
+                    }}>
+                      <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 500, color: isActive ? '#fff' : 'var(--text-secondary)' }}>{tab.label}</span>
+                      <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: isActive ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)', background: isActive ? 'rgba(255,255,255,0.15)' : 'var(--bg-overlay)', borderRadius: 3, padding: '1px 5px' }}>{cnt}</span>
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            </CardHeader>
-            <CardContent className="p-0">
+            </div>
+
+            {/* Transaction rows */}
+            <div style={{ flex: 1, overflowY: 'auto', maxHeight: 480 }}>
               {loading ? (
-                <div className="flex items-center justify-center py-16 text-muted-foreground">
-                  <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                  Loading queue...
-                </div>
-              ) : filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                  <Activity className="h-8 w-8 mb-2 opacity-30" />
-                  <p className="text-sm">No transactions found</p>
-                  <p className="text-xs mt-1">Run the SQL seed query in pgAdmin, then refresh</p>
-                </div>
+                <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', fontSize: 13 }}>Loading...</div>
+              ) : filteredItems.length === 0 ? (
+                <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif', fontSize: 13 }}>No transactions in this category</div>
               ) : (
-                <div className="divide-y overflow-auto max-h-[480px]">
-                  {filtered.map((item) => {
-                    const cfg = DECISION_CONFIG[item.decision];
-                    const DecIcon = cfg?.icon ?? Clock;
-                    const signals: Record<string, number> = item as unknown as Record<string, number>;
-                    // try to get signals from risk_signals if available
-                    const rs = (item as unknown as { risk_signals?: Record<string, number> }).risk_signals ?? {};
-
-                    return (
-                      <div key={item.id} className="px-4 py-3 hover:bg-accent/40 transition-colors">
-                        <div className="flex items-start gap-3">
-
-                          {/* Decision icon */}
-                          <div className={cn('flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border', cfg?.cardBg ?? 'bg-gray-50 border-gray-200')}>
-                            <DecIcon className={cn('h-4 w-4', cfg?.iconColor ?? 'text-gray-400')} />
+                filteredItems.slice(0, 25).map(item => {
+                  const dcfg = DECISION_CFG[item.decision] ?? DECISION_CFG.pending;
+                  return (
+                    <div key={item.id} style={{ position: 'relative', padding: '10px 20px', borderBottom: '1px solid var(--border-dim)', borderLeft: `2px solid ${dcfg.color}`, cursor: 'pointer', transition: 'background 0.12s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-elevated)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, height: 56 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: 'var(--text-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {item.from_account} → {item.to_account}
+                            </span>
                           </div>
-
-                          {/* Main info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs font-semibold text-foreground truncate">
-                                {rs.from_name ?? item.from_account}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground">→</span>
-                              <span className="text-xs text-muted-foreground truncate">
-                                {rs.to_name ?? item.to_account}
-                              </span>
-                              <Badge className={cn('text-[10px] px-1.5 py-0 border ml-auto', cfg?.color)}>
-                                {cfg?.label ?? item.decision}
-                              </Badge>
-                            </div>
-
-                            <div className="flex items-center gap-3 mt-1">
-                              <span className="text-sm font-bold text-foreground">
-                                ₹{(item.amount / 100).toLocaleString('en-IN')}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground">{item.txn_type}</span>
-                              <span className="text-[10px] text-muted-foreground">{item.channel}</span>
-                              <span className="text-[10px] text-muted-foreground ml-auto">
-                                {item.created_at ? timeAgo(item.created_at) : '—'}
-                              </span>
-                            </div>
-
-                            {/* Risk score bar */}
-                            <div className="mt-2 flex items-center gap-2">
-                              <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                                <div
-                                  className={cn('h-full rounded-full', getRiskBarColor(item.risk_score))}
-                                  style={{ width: `${item.risk_score}%` }}
-                                />
-                              </div>
-                              <span className={cn('text-[11px] w-12 text-right', getRiskColor(item.risk_score))}>
-                                {item.risk_score}/100
-                              </span>
-                            </div>
-
-                            {/* Reason codes from risk_signals */}
-                            {Array.isArray((rs as unknown as { reason_codes?: string[] }).reason_codes) &&
-                              ((rs as unknown as { reason_codes?: string[] }).reason_codes?.length ?? 0) > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1.5">
-                                {((rs as unknown as { reason_codes?: string[] }).reason_codes ?? []).slice(0, 3).map((rc: string) => (
-                                  <span key={rc} className="text-[9px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">
-                                    {rc}
-                                  </span>
-                                ))}
-                                {((rs as unknown as { reason_codes?: string[] }).reason_codes?.length ?? 0) > 3 && (
-                                  <span className="text-[9px] text-muted-foreground">
-                                    +{((rs as unknown as { reason_codes?: string[] }).reason_codes?.length ?? 0) - 3} more
-                                  </span>
-                                )}
-                              </div>
-                            )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {[item.txn_type, item.channel].map(tag => (
+                              <span key={tag} style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 600, color: 'var(--text-muted)', background: 'var(--bg-overlay)', border: '1px solid var(--border-dim)', borderRadius: 3, padding: '1px 6px', textTransform: 'uppercase' }}>{tag}</span>
+                            ))}
                           </div>
                         </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                          <span style={{ fontFamily: 'Sora, sans-serif', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{fmtIN(item.amount)}</span>
+                          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, color: 'var(--text-muted)' }}>{timeAgo(item.scored_at)}</span>
+                        </div>
+                        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, fontWeight: 600, color: dcfg.color, background: dcfg.bg, border: `1px solid ${dcfg.border}`, borderRadius: 3, padding: '2px 7px', flexShrink: 0 }}>
+                          {dcfg.label}
+                        </span>
+                        <div style={{ position: 'relative', width: 24, height: 24, flexShrink: 0 }}>
+                          <RiskRing score={item.risk_score} size={24} />
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      {/* Bottom risk bar */}
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: 'var(--bg-elevated)' }}>
+                        <div style={{ width: `${item.risk_score}%`, height: '100%', background: dcfg.color, transition: 'width 0.3s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
-
-        {/* Signal Heatmap — top risky transactions */}
-        {data.filter(d => d.risk_score >= 60).length > 0 && (
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-red-500" />
-                High-Risk Transactions — Signal Breakdown
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Score ≥ 60 — transactions routed to Manual Review or Block
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left pb-2 text-muted-foreground font-medium pr-4">Entity</th>
-                      <th className="text-left pb-2 text-muted-foreground font-medium pr-4">Amount</th>
-                      <th className="text-center pb-2 text-muted-foreground font-medium pr-4">Score</th>
-                      <th className="text-center pb-2 text-muted-foreground font-medium pr-4">Decision</th>
-                      {SIGNAL_KEYS.map(k => (
-                        <th key={k} className="text-center pb-2 text-muted-foreground font-medium pr-2">
-                          {SIGNAL_LABELS[k].split(' ')[0]}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {data
-                      .filter(d => d.risk_score >= 60)
-                      .sort((a, b) => b.risk_score - a.risk_score)
-                      .slice(0, 8)
-                      .map((item) => {
-                        const cfg = DECISION_CONFIG[item.decision];
-                        const rs = (item as unknown as { risk_signals?: Record<string, number> }).risk_signals ?? {};
-                        return (
-                          <tr key={item.id} className="hover:bg-accent/30">
-                            <td className="py-2 pr-4 font-medium truncate max-w-[120px]">
-                              {(rs as unknown as { from_name?: string }).from_name ?? item.from_account}
-                            </td>
-                            <td className="py-2 pr-4 text-foreground">
-                              ₹{(item.amount / 100).toLocaleString('en-IN')}
-                            </td>
-                            <td className="py-2 pr-4 text-center">
-                              <span className={cn('font-bold', getRiskColor(item.risk_score))}>
-                                {item.risk_score}
-                              </span>
-                            </td>
-                            <td className="py-2 pr-4 text-center">
-                              <Badge className={cn('text-[10px] px-1.5 py-0 border', cfg?.color)}>
-                                {cfg?.label ?? item.decision}
-                              </Badge>
-                            </td>
-                            {SIGNAL_KEYS.map(k => {
-                              const raw = rs[k] ?? 0;
-                              const val = typeof raw === 'boolean' ? (raw ? 1 : 0) : raw;
-                              const pct = Math.min(1, val / (SIGNAL_MAX[k] ?? 1));
-                              const heat = pct > 0.7 ? 'bg-red-100 text-red-700' : pct > 0.4 ? 'bg-amber-100 text-amber-700' : pct > 0 ? 'bg-yellow-50 text-yellow-700' : 'bg-muted text-muted-foreground';
-                              return (
-                                <td key={k} className="py-2 pr-2 text-center">
-                                  <span className={cn('inline-block px-1.5 py-0.5 rounded text-[10px] font-medium min-w-[32px]', heat)}>
-                                    {typeof raw === 'boolean' ? (raw ? 'YES' : '—') : val.toFixed(1)}
-                                  </span>
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
       </div>
+      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </>
   );
 }
+

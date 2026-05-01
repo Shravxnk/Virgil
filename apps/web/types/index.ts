@@ -207,6 +207,7 @@ export interface ComplianceSummary {
 
 export interface ExecutiveDashboard {
   total_fraud_detected: number;
+  total_fraud_prevented: number;
   active_cases: number;
   false_positive_rate: number;
   detection_rate: number;

@@ -1,6 +1,8 @@
 """Dashboard service: assembles analyst and executive dashboard data from live DB."""
 
+import asyncio
 import json
+import time
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
@@ -15,6 +17,23 @@ from app.schemas.dashboard import (
     ScoreDistribution,
     StatusCount,
 )
+
+# ---------------------------------------------------------------------------
+# Simple TTL cache for dashboard results (avoids recomputing on every page load)
+# ---------------------------------------------------------------------------
+_cache: dict[str, tuple[float, object]] = {}
+_CACHE_TTL = 30  # seconds
+
+
+def _get_cached(key: str):
+    entry = _cache.get(key)
+    if entry and (time.monotonic() - entry[0]) < _CACHE_TTL:
+        return entry[1]
+    return None
+
+
+def _set_cache(key: str, value: object):
+    _cache[key] = (time.monotonic(), value)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -43,6 +62,10 @@ async def _fetch_flagged_transactions() -> list[dict]:
 # ---------------------------------------------------------------------------
 
 async def get_analyst_dashboard() -> AnalystDashboardResponse:
+    cached = _get_cached("analyst_dashboard")
+    if cached:
+        return cached
+
     alerts = await _fetch_all_alerts()
     now_utc = datetime.now(timezone.utc)
     today_utc = now_utc.date()
@@ -108,7 +131,7 @@ async def get_analyst_dashboard() -> AnalystDashboardResponse:
         for d, v in daily.items()
     ]
 
-    return AnalystDashboardResponse(
+    result = AnalystDashboardResponse(
         total_alerts=total_alerts,
         critical_alerts=critical_alerts,
         pending_review=pending_review,
@@ -118,6 +141,8 @@ async def get_analyst_dashboard() -> AnalystDashboardResponse:
         score_distribution=score_distribution,
         daily_trend=daily_trend,
     )
+    _set_cache("analyst_dashboard", result)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -125,14 +150,21 @@ async def get_analyst_dashboard() -> AnalystDashboardResponse:
 # ---------------------------------------------------------------------------
 
 async def get_executive_dashboard() -> ExecutiveDashboardResponse:
+    cached = _get_cached("executive_dashboard")
+    if cached:
+        return cached
+
     # Keep model health + compliance from JSON (they reflect validated model metrics)
     metrics = load_executive_metrics()
     model = metrics["model_health"]
     compliance = metrics["compliance_summary"]
 
-    alerts = await _fetch_all_alerts()
-    cases = await _fetch_all_cases()
-    flagged_txns = await _fetch_flagged_transactions()
+    # Parallel fetch of all three independent data sources
+    alerts, cases, flagged_txns = await asyncio.gather(
+        _fetch_all_alerts(),
+        _fetch_all_cases(),
+        _fetch_flagged_transactions(),
+    )
 
     # Total fraud detected: sum of amounts on flagged transactions
     total_fraud_detected = sum(
@@ -161,8 +193,15 @@ async def get_executive_dashboard() -> ExecutiveDashboardResponse:
         (resolved_legit / resolved_total) if resolved_total else metrics.get("false_positive_rate", 0.08)
     )
 
-    # Detection rate from model metrics (stable, model-driven)
-    detection_rate = metrics.get("detection_rate", 0.94)
+    # Detection rate: computed live from resolved cases; fall back to JSON
+    confirmed_fraud = sum(1 for c in cases if c.get("status") == "resolved_fraud")
+    confirmed_legit = sum(1 for c in cases if c.get("status") == "resolved_legitimate")
+    total_resolved = confirmed_fraud + confirmed_legit
+    detection_rate = (
+        round(confirmed_fraud / total_resolved, 4)
+        if total_resolved > 0
+        else metrics.get("detection_rate", 0.918)
+    )
 
     # Avg resolution time from case timelines
     resolution_times = []
@@ -232,6 +271,20 @@ async def get_executive_dashboard() -> ExecutiveDashboardResponse:
     if not fraud_trend:
         fraud_trend = [FraudTrendPoint(**f) for f in metrics.get("fraud_trend", [])]
 
+    # Pad with JSON historical data if fewer than 6 months of live data
+    if 0 < len(fraud_trend) < 6:
+        json_trend = [FraudTrendPoint(**f) for f in metrics.get("fraud_trend", [])]
+        live_months = {ft.month for ft in fraud_trend}
+        historical = [ft for ft in json_trend if ft.month not in live_months]
+        needed = 6 - len(fraud_trend)
+        fraud_trend = historical[-needed:] + fraud_trend
+
+    # Total fraud prevented: sum of monthly prevented amounts
+    total_fraud_prevented = round(sum(month_prevented.values()), 2)
+    if total_fraud_prevented == 0 and fraud_trend:
+        # Estimate as sum of prevented from trend data
+        total_fraud_prevented = round(sum(ft.prevented for ft in fraud_trend), 2)
+
     # Top risk categories: group alerts by type
     cat_counts: dict[str, int] = defaultdict(int)
     cat_amounts: dict[str, float] = defaultdict(float)
@@ -247,8 +300,36 @@ async def get_executive_dashboard() -> ExecutiveDashboardResponse:
     if not top_risk_categories:
         top_risk_categories = [RiskCategory(**r) for r in metrics.get("top_risk_categories", [])]
 
-    return ExecutiveDashboardResponse(
+    # Live compliance summary from case data
+    now_utc = datetime.now(timezone.utc)
+    sar_filed_live = sum(1 for c in cases if c.get("status") == "resolved_fraud")
+    # STR pending: open/investigating/escalated cases older than 7 days (filing deadline)
+    sar_pending_live = 0
+    for c in cases:
+        if c.get("status") in {"open", "investigating", "escalated"}:
+            created_raw = c.get("created_at", "")
+            if created_raw:
+                try:
+                    created_dt = datetime.fromisoformat(str(created_raw).replace("Z", "+00:00"))
+                    if (now_utc - created_dt).days > 7:
+                        sar_pending_live += 1
+                except Exception:
+                    pass
+    # Compliance score: start at 100, penalise overdue STRs
+    raw_score = 100.0 - (sar_pending_live * 12.0)
+    compliance_score_live = round(max(0.0, min(100.0, raw_score)), 1)
+    live_compliance = ComplianceSummary(
+        sar_filed=sar_filed_live,
+        sar_pending=sar_pending_live,
+        ctr_filed=compliance.get("ctr_filed", 0),  # cash-based, keep from JSON
+        last_audit_date=compliance.get("last_audit_date", ""),
+        next_audit_date=compliance.get("next_audit_date", ""),
+        compliance_score=compliance_score_live,
+    )
+
+    result = ExecutiveDashboardResponse(
         total_fraud_detected=round(total_fraud_detected, 2),
+        total_fraud_prevented=total_fraud_prevented,
         active_cases=active_cases,
         false_positive_rate=round(false_positive_rate, 4),
         detection_rate=detection_rate,
@@ -260,6 +341,8 @@ async def get_executive_dashboard() -> ExecutiveDashboardResponse:
         model_f1=model["f1_score"],
         cases_by_status=cases_by_status,
         fraud_trend=fraud_trend,
-        compliance_summary=ComplianceSummary(**compliance),
+        compliance_summary=live_compliance,
         top_risk_categories=top_risk_categories,
     )
+    _set_cache("executive_dashboard", result)
+    return result

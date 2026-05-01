@@ -1,5 +1,7 @@
 """Case service: manages case retrieval and detail assembly."""
 
+import asyncio
+
 from app.schemas.case import CaseDetailResponse, CaseListItem, CaseListResponse
 
 
@@ -37,14 +39,32 @@ async def get_case_detail(case_id: str) -> CaseDetailResponse | None:
     case = await find_case_by_id(case_id)
     if not case:
         return None
-    case_alerts = [
-        a for aid in case.get("alert_ids", [])
-        if (a := await find_alert_by_id(aid)) is not None
-    ]
-    case_txns = [
-        t for tid in case.get("transaction_ids", [])
-        if (t := await find_transaction_by_id(tid)) is not None
-    ]
+
+    # Parallel fetch of alerts and transactions (fixes N+1 sequential queries)
+    alert_tasks = [find_alert_by_id(aid) for aid in case.get("alert_ids", [])]
+    txn_tasks = [find_transaction_by_id(tid) for tid in case.get("transaction_ids", [])]
+    alert_results = await asyncio.gather(*alert_tasks) if alert_tasks else []
+    txn_results = await asyncio.gather(*txn_tasks) if txn_tasks else []
+
+    case_alerts = [a for a in alert_results if a is not None]
+    case_txns = []
+    for t in txn_results:
+        if t is not None:
+            # Normalize field names for the frontend Transaction type
+            case_txns.append({
+                "id": t["id"],
+                "from_account": t.get("from_account", ""),
+                "to_account": t.get("to_account", ""),
+                "amount": t.get("amount", 0),
+                "currency": t.get("currency", "INR"),
+                "timestamp": t.get("timestamp") or t.get("ts", ""),
+                "type": t.get("txn_type", t.get("type", "")),
+                "status": t.get("status", "completed"),
+                "channel": t.get("channel", ""),
+                "location": t.get("geo_location", None),
+                "risk_score": t.get("risk_score", 0),
+                "flagged": t.get("flagged", False),
+            })
 
     return CaseDetailResponse(
         id=case["id"],

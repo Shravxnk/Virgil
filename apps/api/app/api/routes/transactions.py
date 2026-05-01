@@ -24,6 +24,57 @@ from app.services.risk_scoring import score_transaction_params
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
 
+def _fast_suggestion(item: dict) -> dict:
+    """Instant rule-based AI suggestion — no LLM call, zero latency."""
+    signals = item.get("risk_signals") or {}
+    score = item.get("risk_score", 0) or 0
+    device_mismatch = signals.get("device_mismatch", False)
+    amount_anomaly = signals.get("amount_anomaly", 0) or 0
+    graph_risk = signals.get("graph_risk", 0) or 0
+    amount = item.get("amount", 0)
+
+    if score >= 75 or (device_mismatch and amount_anomaly > 5) or graph_risk > 0.5:
+        return {
+            "suggestion": "REJECT",
+            "confidence": "High" if score >= 75 else "Medium",
+            "reasoning": (
+                f"Risk score {score}/100 with "
+                f"{'unknown device, ' if device_mismatch else ''}"
+                f"{amount_anomaly:.1f}x amount deviation"
+                f"{', circular/network risk detected' if graph_risk > 0.5 else ''}. "
+                f"Multiple converging signals suggest potential fraud. "
+                f"Recommend rejection pending account holder verification."
+            ),
+            "action": "Call account holder on registered mobile to verify transaction intent.",
+            "score": score,
+        }
+    elif score >= 65 or device_mismatch:
+        return {
+            "suggestion": "REJECT",
+            "confidence": "Low",
+            "reasoning": (
+                f"Score {score}/100 is in the upper manual-review range. "
+                f"{'Device is unrecognised. ' if device_mismatch else ''}"
+                f"Amount deviation of {amount_anomaly:.1f}x. "
+                f"Borderline — recommend additional verification before processing."
+            ),
+            "action": "Send OTP via registered mobile and verify device fingerprint.",
+            "score": score,
+        }
+    else:
+        return {
+            "suggestion": "APPROVE",
+            "confidence": "Medium",
+            "reasoning": (
+                f"Score {score}/100 — lower end of manual review range. "
+                f"Amount deviation of {amount_anomaly:.1f}x is moderate. "
+                f"No strong network or device signals. Likely a legitimate but unusual transaction."
+            ),
+            "action": "Spot-check account activity for past 7 days before approving.",
+            "score": score,
+        }
+
+
 class PreTxnRequest(BaseModel):
     from_account: str
     to_account: str
@@ -193,8 +244,9 @@ async def score_pre_transaction(req: PreTxnRequest):
         currency=req.currency,
     )
 
-    # Score the transaction using the deterministic engine
-    result = score_transaction_params(
+    # Score the transaction using the deterministic engine (offload to thread)
+    result = await asyncio.to_thread(
+        score_transaction_params,
         from_account=req.from_account,
         to_account=req.to_account,
         amount=req.amount,
@@ -222,7 +274,12 @@ async def score_pre_transaction(req: PreTxnRequest):
     scored_at = datetime.now(timezone.utc).isoformat()
 
     # Auto-generate alert + case for high-risk decisions (score ≥ 50)
-    alert_id, case_id = await _auto_generate_alert_and_case(pre_id, req, result, scored_at)
+    alert_id, case_id = None, None
+    try:
+        alert_id, case_id = await _auto_generate_alert_and_case(pre_id, req, result, scored_at)
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("Auto-alert/case failed for %s: %s", pre_id, exc)
 
     # AI explanation is omitted from the scoring response for speed.
     # Fetch it on-demand via GET /transactions/{pre_id}/explain
@@ -282,29 +339,34 @@ async def explain_pre_transaction(pre_id: str):
 @router.get("/queue")
 async def get_pre_txn_queue(limit: int = Query(50, le=200)):
     """View the pre-transaction scoring queue (pending + recent decisions)."""
-    if not connection.PG_AVAILABLE:
-        return {"queue": [], "total": 0, "message": "PostgreSQL not available"}
-    pool = connection.get_pool()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT * FROM pre_txn_queue ORDER BY created_at DESC LIMIT $1", limit
-        )
-    items = []
-    for r in rows:
-        items.append({
-            "id": r["id"],
-            "from_account": r["from_account"],
-            "to_account": r["to_account"],
-            "amount": r["amount"],
-            "currency": r["currency"],
-            "txn_type": r["txn_type"],
-            "channel": r["channel"],
-            "risk_score": r["risk_score"],
-            "decision": r["decision"],
-            "scored_at": r["scored_at"].isoformat() if r["scored_at"] else None,
-            "completed": r["completed"],
-            "created_at": r["created_at"].isoformat() if r["created_at"] else None,
-        })
+    if connection.PG_AVAILABLE:
+        pool = connection.get_pool()
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM pre_txn_queue ORDER BY created_at DESC LIMIT $1", limit
+            )
+        if rows:
+            items = []
+            for r in rows:
+                items.append({
+                    "id": r["id"],
+                    "from_account": r["from_account"],
+                    "to_account": r["to_account"],
+                    "amount": r["amount"],
+                    "currency": r["currency"],
+                    "txn_type": r["txn_type"],
+                    "channel": r["channel"],
+                    "risk_score": r["risk_score"],
+                    "decision": r["decision"],
+                    "scored_at": r["scored_at"].isoformat() if r["scored_at"] else None,
+                    "completed": r["completed"],
+                    "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+                })
+            return {"queue": items, "total": len(items)}
+
+    # Fall back to runtime store
+    from app.db.repositories.runtime_store import list_pre_txn_queue
+    items = list_pre_txn_queue(limit)
     return {"queue": items, "total": len(items)}
 
 
@@ -326,13 +388,10 @@ async def list_transactions(
 
 @router.get("/manual-review")
 async def get_manual_review_list(limit: int = Query(50, le=200)):
-    """Return all transactions pending manual analyst review (decision=manual_review, not resolved)."""
+    """Return all transactions pending manual analyst review (decision=manual_review, not resolved).
+    Includes fast rule-based AI suggestions (no LLM call — instant response)."""
     items = await get_manual_review_queue(limit=limit)
-    # Enrich each item with AI suggestion — run all LLM calls in parallel
-    suggestions = await asyncio.gather(
-        *[asyncio.to_thread(generate_manual_review_suggestion, item) for item in items]
-    )
-    enriched = [{**item, "ai_suggestion": suggestion} for item, suggestion in zip(items, suggestions)]
+    enriched = [{**item, "ai_suggestion": _fast_suggestion(item)} for item in items]
     return {"manual_review": enriched, "total": len(enriched)}
 
 @router.get("/manual-review/{pre_id}")
@@ -366,8 +425,8 @@ async def get_manual_review_item(pre_id: str):
         "beneficiary_risk": item.get("risk_signals", {}).get("beneficiary_risk", 0),
         "graph_risk": item.get("risk_signals", {}).get("graph_risk", 0),
     }
-    explanation = generate_alert_explanation(alert_data)
-    suggestion = generate_manual_review_suggestion(item)
+    explanation = await asyncio.to_thread(generate_alert_explanation, alert_data)
+    suggestion = await asyncio.to_thread(generate_manual_review_suggestion, item)
 
     return {**item, "explanation": explanation, "ai_suggestion": suggestion}
 

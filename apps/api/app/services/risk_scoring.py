@@ -103,8 +103,11 @@ def score_transaction(transaction_id: str) -> RiskScoreResponse:
         _profile_usual_hours(sender_profile) if sender_profile else (9, 17)
     )
 
-    txn_time = datetime.fromisoformat(txn["timestamp"].replace("Z", "+00:00"))
-    txn_hour = txn_time.hour
+    try:
+        txn_time = datetime.fromisoformat(txn["timestamp"].replace("Z", "+00:00"))
+        txn_hour = txn_time.hour
+    except (TypeError, ValueError, AttributeError):
+        txn_hour = 12  # safe default
 
     known_device = any(d["trust_score"] > 50 for d in sender_devices) if sender_devices else True
     device_trust = (

@@ -1,5 +1,7 @@
 """Alert routes."""
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException, Query
 
 from app.llm.explainer import generate_alert_explanation
@@ -36,5 +38,5 @@ async def explain_alert(alert_id: str):
     if alert is None:
         raise HTTPException(status_code=404, detail=f"Alert {alert_id} not found")
 
-    explanation = generate_alert_explanation(alert.model_dump())
+    explanation = await asyncio.to_thread(generate_alert_explanation, alert.model_dump())
     return {"alert_id": alert_id, "explanation": explanation}

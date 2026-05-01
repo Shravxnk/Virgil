@@ -1,9 +1,10 @@
+// components/dashboard/case-table.tsx
 'use client';
 
 import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn, formatCurrency, formatDate, statusColor } from '@/lib/utils';
+import { formatCurrency, formatDate } from '@/lib/utils';
+import { StatusBadge } from '@/components/shared/status-badge';
+import { RiskBadge } from '@/components/shared/risk-badge';
 import { CaseListItem } from '@/types';
 import { FileSearch } from 'lucide-react';
 
@@ -14,74 +15,65 @@ interface CaseTableProps {
 export function CaseTable({ cases }: CaseTableProps) {
   if (cases.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <FileSearch className="h-12 w-12 text-muted-foreground/40 mb-3" />
-          <p className="text-sm text-muted-foreground">No cases found</p>
-        </CardContent>
-      </Card>
+      <div
+        className="flex flex-col items-center justify-center py-12 rounded"
+        style={{ backgroundColor: '#111827', border: '1px solid #1E2D45' }}
+      >
+        <FileSearch className="h-10 w-10 mb-3" style={{ color: '#1E2D45' }} />
+        <p className="text-xs" style={{ color: '#8899BB' }}>No cases found</p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base font-medium">Investigation Cases</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="px-6 py-3 text-left font-medium text-muted-foreground">Case</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Risk</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Exposure</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Assigned</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Created</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {cases.map((c) => (
-                <tr key={c.id} className="hover:bg-accent/50 transition-colors">
-                  <td className="px-6 py-3">
-                    <Link href={`/analyst/cases/${c.id}`} className="hover:underline">
-                      <div className="font-medium">{c.id}</div>
-                      <div className="text-xs text-muted-foreground truncate max-w-[280px]">
-                        {c.title}
-                      </div>
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge className={cn('text-[10px]', statusColor(c.status))}>
-                      {c.status.replace('_', ' ')}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        'font-bold',
-                        c.risk_score >= 80
-                          ? 'text-red-600'
-                          : c.risk_score >= 60
-                          ? 'text-orange-600'
-                          : c.risk_score >= 30
-                          ? 'text-yellow-600'
-                          : 'text-green-600',
-                      )}
-                    >
-                      {c.risk_score}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-medium">{formatCurrency(c.total_exposure)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.assigned_to}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{formatDate(c.created_at)}</td>
-                </tr>
+    <div className="rounded overflow-hidden" style={{ backgroundColor: '#111827', border: '1px solid #1E2D45' }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid #1E2D45' }}>
+        <p className="text-xs font-semibold tracking-wide uppercase" style={{ color: '#8899BB' }}>
+          Investigation Cases
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr style={{ borderBottom: '1px solid #1E2D45' }}>
+              {['Case', 'Status', 'Risk', 'Exposure', 'Assigned', 'Created'].map(h => (
+                <th key={h} className="px-4 py-2.5 text-left font-medium tracking-wide uppercase" style={{ color: '#4A5F80' }}>
+                  {h}
+                </th>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
+            </tr>
+          </thead>
+          <tbody>
+            {cases.map((c, idx) => (
+              <tr
+                key={c.id}
+                className="transition-colors"
+                style={{ borderBottom: idx < cases.length - 1 ? '1px solid #1E2D45' : 'none' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = '#1A2235'; (e.currentTarget as HTMLTableRowElement).style.borderLeft = '2px solid #3B82F6'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLTableRowElement).style.borderLeft = 'none'; }}
+              >
+                <td className="px-4 py-3">
+                  <Link href={`/analyst/cases/${c.id}`}>
+                    <div className="text-xs font-mono font-medium" style={{ color: '#60A5FA' }}>{c.id}</div>
+                    <div className="text-[11px] truncate max-w-[240px] mt-0.5" style={{ color: '#8899BB' }}>{c.title}</div>
+                  </Link>
+                </td>
+                <td className="px-4 py-3">
+                  <StatusBadge value={c.status} />
+                </td>
+                <td className="px-4 py-3">
+                  <RiskBadge score={c.risk_score} size="sm" showLabel={false} />
+                </td>
+                <td className="px-4 py-3 font-mono font-medium" style={{ color: '#F0F4FF' }}>
+                  {formatCurrency(c.total_exposure)}
+                </td>
+                <td className="px-4 py-3" style={{ color: '#8899BB' }}>{c.assigned_to}</td>
+                <td className="px-4 py-3 font-mono" style={{ color: '#4A5F80' }}>{formatDate(c.created_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

@@ -9,7 +9,10 @@ import type {
   ExecutiveDashboardResponse,
 } from '@/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// In production (Render) NEXT_PUBLIC_API_URL is empty → relative paths hit
+// the Next.js rewrite proxy → Render internal API. In local dev, .env.local
+// sets NEXT_PUBLIC_API_URL=http://localhost:8000 for direct calls.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -119,4 +122,70 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ decision, note: note ?? '' }),
     }),
+
+  // Compliance — STR/CTR Reports
+  getComplianceReports: () =>
+    fetchAPI<{
+      summary: { total_reports: number; str_count: number; ctr_count: number; filed: number; pending: number; overdue: number; total_exposure: number };
+      reports: ComplianceReport[];
+    }>('/api/compliance/reports'),
+
+  getComplianceReport: (caseId: string) =>
+    fetchAPI<ComplianceReport>(`/api/compliance/reports/${encodeURIComponent(caseId)}`),
+
+  // Model Health — real-time
+  getModelHealth: () =>
+    fetchAPI<ModelHealthResponse>('/api/compliance/model-health'),
 };
+
+// Types for new endpoints
+export interface ComplianceReport {
+  report_id: string;
+  case_id: string;
+  report_type: 'STR' | 'CTR';
+  fraud_type: string;
+  filing_status: 'Filed' | 'Pending' | 'Due';
+  is_overdue: boolean;
+  risk_score: number;
+  total_exposure: number;
+  primary_account: string;
+  subject_name: string;
+  assigned_analyst: string;
+  case_title: string;
+  description: string;
+  recommended_action: string;
+  created_at: string;
+  filing_deadline: string;
+  legal_basis: string;
+  reasons: string[];
+  alert_count: number;
+  transaction_ids: string[];
+  case_status: string;
+  explanation: string;
+}
+
+export interface ModelHealthResponse {
+  engine_name: string;
+  engine_type: string;
+  status: string;
+  last_retrained: string;
+  next_review: string;
+  metrics: {
+    accuracy: number;
+    precision: number;
+    recall: number;
+    f1_score: number;
+    roc_auc: number;
+    false_positive_rate: number;
+  };
+  data_drift_pct: number;
+  total_alerts_scored: number;
+  confirmed_fraud_cases: number;
+  confirmed_legit_cases: number;
+  score_distribution: Record<string, number>;
+  decision_distribution: Record<string, number>;
+  signal_importance: { signal: string; weight: number; description: string }[];
+  insights: { level: string; metric: string; message: string }[];
+  architecture: { component: string; status: string; description: string }[];
+}
+

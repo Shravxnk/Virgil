@@ -1,0 +1,941 @@
+================================================================================
+CHAKRAVYUH — COMPLETE UI/UX SPECIFICATION
+For UI redesign briefing
+================================================================================
+
+--------------------------------------------------------------------------------
+1. DESIGN SYSTEM
+--------------------------------------------------------------------------------
+
+FRAMEWORK STACK
+  - Next.js 14 + React 18 + TypeScript 5
+  - Tailwind CSS 3
+  - shadcn/ui (Radix UI primitives)
+  - Framer Motion (animations)
+  - Recharts (data visualisation)
+  - ReactFlow (graph/network visualisation)
+  - Lucide React (icons)
+
+FONTS
+  - UI text: Inter (Google Fonts)
+  - Code / IDs: JetBrains Mono
+
+THEME
+  - Light-first with full dark mode support
+  - All colours driven by CSS custom properties (HSL)
+  - Theme toggled via button in header
+
+CSS CUSTOM PROPERTIES (light mode)
+  --background:           0 0% 100%
+  --foreground:           222.2 84% 4.9%
+  --card:                 0 0% 100%
+  --card-foreground:      222.2 84% 4.9%
+  --popover:              0 0% 100%
+  --popover-foreground:   222.2 84% 4.9%
+  --primary:              221 83% 53%        (navy blue)
+  --primary-foreground:   210 40% 98%
+  --secondary:            210 40% 96.1%
+  --secondary-foreground: 222.2 47.4% 11.2%
+  --muted:                210 40% 96.1%
+  --muted-foreground:     215.4 16.3% 46.9%
+  --accent:               210 40% 96.1%
+  --accent-foreground:    222.2 47.4% 11.2%
+  --destructive:          0 84.2% 60.2%      (red)
+  --destructive-foreground: 210 40% 98%
+  --border:               214.3 31.8% 91.4%
+  --input:                214.3 31.8% 91.4%
+  --ring:                 221 83% 53%
+  --radius:               0.5rem
+
+RISK SCORE COLOUR CODING (universal — used on every page)
+  Score >= 80   →  Red     text-red-600    bg-red-100    border-red-200
+  Score 60-79   →  Orange  text-orange-600 bg-orange-100 border-orange-200
+  Score 30-59   →  Amber   text-amber-600  bg-amber-100  border-amber-200
+  Score < 30    →  Green   text-green-600  bg-green-100  border-green-200
+
+SEVERITY BADGE COLOURS
+  critical  →  red
+  high      →  orange
+  medium    →  yellow / amber
+  low       →  blue
+
+CASE STATUS BADGE COLOURS
+  open                  →  blue
+  investigating         →  yellow
+  escalated             →  red
+  confirmed_fraud       →  red (muted)
+  resolved_fraud        →  red (muted)
+  resolved_legitimate   →  green
+  closed                →  gray
+
+DECISION BADGE COLOURS (risk scoring engine output)
+  block          →  red
+  manual_review  →  orange
+  mfa            →  amber
+  approve        →  green
+
+ALERT TYPE ICONS (Lucide)
+  circular_fund_flow    →  RefreshCw
+  account_takeover      →  Shield
+  synthetic_identity    →  User
+  structuring           →  BarChart3
+  mule_network          →  Network
+  high_velocity         →  Zap
+
+--------------------------------------------------------------------------------
+2. LAYOUT & NAVIGATION
+--------------------------------------------------------------------------------
+
+SHELL STRUCTURE
+  Fixed sidebar (240px wide, full height) + main content area to the right.
+  Top header spans full width above content.
+  No mobile hamburger — desktop-optimised layout.
+
+HEADER (top bar)
+  Left:   App logo / title "Chakravyuh"
+  Centre: Live clock showing IST time (HH:MM:SS, updates every second)
+  Right:  Bell icon (notifications) · Sun/Moon theme toggle · User avatar + "Analyst"
+
+SIDEBAR NAVIGATION
+  Section: ANALYST
+    Dashboard           /analyst              (LayoutDashboard icon)
+    Alert Inbox         /analyst/alerts       (Bell icon)
+    Cases               /analyst/cases        (FolderOpen icon)
+    Manual Review       /analyst/manual-review (Eye icon)
+    Pre-Txn Analytics   /analyst/pre-txn-analytics (Activity icon)
+    Transaction Scorer  /analyst/transactions  (CreditCard icon)
+    Demo Simulator      /analyst/demo          (Play icon)
+
+  Section: EXECUTIVE
+    Overview            /executive            (TrendingUp icon)
+    Compliance          /executive/compliance  (Shield icon)
+    Model Health        /executive/model-health (Brain icon)
+
+  Bottom:
+    Reports             /reports               (FileText icon)
+
+  Active nav item: bg-primary/10 text-primary with left border accent (2px primary)
+  Hover: bg-muted transition
+
+ANALYST LAYOUT WRAPPER
+  Wraps all /analyst/* pages. Includes sidebar + header.
+
+EXECUTIVE LAYOUT WRAPPER
+  Wraps all /executive/* pages. Includes sidebar + header.
+
+REPORTS LAYOUT WRAPPER
+  Wraps /reports/* pages.
+
+--------------------------------------------------------------------------------
+3. PAGES
+--------------------------------------------------------------------------------
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: / (Home / Landing)
+════════════════════════════════════════════════════════════════════════════════
+Purpose: Entry point — navigate to analyst, executive, or demo.
+API calls: None (static)
+
+Layout: Centred vertically and horizontally. Three large navigation cards in a row.
+
+Card 1 — Analyst Console
+  Icon: Shield (large, navy)
+  Title: "Analyst Console"
+  Subtitle: "Alert inbox, case investigation, fraud network graphs, AI explanations"
+  CTA: Arrow → navigates to /analyst
+  Accent colour: Navy/primary
+
+Card 2 — Executive Dashboard
+  Icon: BarChart3 (large, purple)
+  Title: "Executive Dashboard"
+  Subtitle: "KPIs, model health, compliance tracking, trend analysis"
+  CTA: Arrow → navigates to /executive
+  Accent colour: Purple
+
+Card 3 — Demo Simulator
+  Icon: Play (large, teal)
+  Title: "Demo Simulator"
+  Subtitle: "34 live use cases — run the full platform end to end"
+  CTA: Arrow → navigates to /analyst/demo
+  Accent colour: Teal
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: /analyst — Analyst Dashboard
+════════════════════════════════════════════════════════════════════════════════
+Purpose: Command centre for fraud analysts. Overview of active alerts and cases.
+API calls:
+  GET /api/dashboard/analyst
+
+SECTIONS:
+
+KPI Cards (top row, 4 cards)
+  1. Total Alerts       — number + trend arrow (↑↓) vs yesterday
+  2. Open Cases         — number + trend
+  3. Blocked Today      — number + trend
+  4. Avg Risk Score     — number/100 + trend
+  Each card: large number, label, small trend indicator (green up = good, red up = bad)
+
+Alert Inbox (AlertInbox component)
+  Filterable table of recent alerts.
+  Filter bar: Severity select · Status select
+  Columns: Alert ID | Alert Type | Account Name | Amount (₹) | Severity badge |
+           Status badge | Risk Score bar | Timestamp | "View" button
+  Clicking "View" opens alert detail.
+  Paginated (10 per page) with prev/next controls.
+
+Case Summary Panel
+  Mini table of open cases.
+  Columns: Case ID | Title | Status badge | Exposure (₹) | Assigned To
+  Clicking a row navigates to /analyst/cases/{id}
+
+Loading state: Full-page DashboardSkeleton (animated pulse blocks)
+Empty state: "No alerts found" with icon
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: /analyst/alerts — Alert Inbox
+════════════════════════════════════════════════════════════════════════════════
+Purpose: Full alert list with filtering. Primary investigation entry point.
+API calls:
+  GET /api/alerts?severity=&status=&limit=&offset=
+
+Filter bar (top): Severity select | Status select | Search input (placeholder: "Search alerts…")
+
+Alert Table
+  Columns: Alert ID | Alert Type | Account Name | Amount (₹) | Severity (badge) |
+           Status (badge) | Risk Score (number + coloured progress bar) |
+           Timestamp | "View" button
+
+Alert Detail (expanded inline or navigated):
+  Full description paragraph
+  Sub-cards:
+    Behavioral Analysis: deviation factor, baseline avg, current amount, time anomaly flag
+    Device Analysis: device type, OS, known/unknown, IP address, IP risk level, geo location
+    Network Analysis: circular transfers detected, hop count, connected suspicious accounts, layering flag
+  Linked Case ID (link to case)
+  Linked Transaction ID
+  "Generate AI Explanation" button → POST /api/alerts/{id}/explain
+    Result displays in an amber/yellow callout box with the explanation text
+    Loading: spinner inside the callout
+    Error: red callout with error message
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: /analyst/cases — Cases List
+════════════════════════════════════════════════════════════════════════════════
+Purpose: All investigation cases with filtering by status.
+API calls:
+  GET /api/cases?status=&limit=&offset=
+
+Filter bar: Status dropdown | Search input
+
+Cases Table (CaseTable component)
+  Columns: Case ID | Title | Status badge | Total Exposure (₹, bold) |
+           Risk Score | Assigned To | Created Date | "Open" button
+
+Empty state: "No cases found" with FolderOpen icon
+Loading: skeleton rows
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: /analyst/cases/[id] — Case Detail
+════════════════════════════════════════════════════════════════════════════════
+Purpose: Full investigation workspace for a single case.
+API calls (parallel on load):
+  GET /api/cases/{id}
+  GET /api/graph/{id}
+Button actions:
+  POST /api/alerts/{alert_id}/explain  (AI Explain button)
+  GET  /api/report/{id}/pdf            (FIU Report button — opens new tab)
+
+TOP SECTION
+  Left: RiskGauge (large circular dial, 120px)
+  Right of gauge:
+    Case title (large, bold)
+    Row: Status badge · "Assigned to {name}" · Created date
+    Recommended action (muted text)
+  Far right: Two buttons
+    "AI Explain" (MessageSquare icon) — generates explanation for first linked alert
+    "FIU Report" (Download icon) — triggers PDF download
+
+AI Explanation Area (appears below top section after clicking AI Explain)
+  Amber/yellow callout box with label "AI Analysis" and explanation text.
+
+TABS (4)
+
+Tab 1: Overview
+  Description card (full case description text)
+  Subject Information card:
+    Primary account number
+    Case title
+    Total exposure (₹)
+    Recommended action
+  Evidence Cards (3 sub-cards in a row):
+    Behavioral Analysis: deviation factor, baseline avg, current amount, time anomaly
+    Device Analysis: device type, OS, IP, IP risk, geo location, known/unknown
+    Network Analysis: circular transfers, hop count, connected suspicious accounts, layering
+  Similar Cases section:
+    List of related cases: ID | Title | Similarity % | Outcome | Risk Score
+
+Tab 2: Graph
+  FraudNetwork component (ReactFlow, 500px height)
+  Full description of graph component in Section 5 below.
+
+Tab 3: Timeline
+  Chronological event list
+  Each event: Timestamp (formatted) · Event type badge · Description text
+  Sorted newest first
+  Empty state: "No timeline events"
+
+Tab 4: Evidence
+  SHA-256 chain-of-custody hash (monospace, copyable)
+  Linked Alert IDs (as clickable badges)
+  Linked Transaction IDs (as monospace tags)
+  Raw evidence JSON expandable section
+
+Loading state: DashboardSkeleton
+Not found state: "Case {id} not found" + "Go Back" button
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: /analyst/manual-review — Manual Review Queue
+════════════════════════════════════════════════════════════════════════════════
+Purpose: Queue of transactions in the manual_review band (score 60–80).
+API calls:
+  GET /api/transactions/queue
+
+Layout: Cards list (not table) — each transaction is a card.
+
+Each transaction card:
+  Header: Transaction ID (monospace) + Decision badge ("MANUAL REVIEW")
+  Row 1: From account → To account · Amount (₹) · Type · Channel
+  Row 2: Risk score (large, coloured) + progress bar
+  Row 3: Reason codes as small tag pills (e.g., "AMOUNT_DEVIATION", "NEW_DEVICE")
+  Row 4: Device · IP · Geo location
+  Actions (bottom of card): Approve button (green) | Block button (red) | Escalate button (orange)
+
+Empty state: "Review queue is empty" with CheckCircle icon
+Loading: skeleton cards
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: /analyst/pre-txn-analytics — Pre-Transaction Scoring Queue
+════════════════════════════════════════════════════════════════════════════════
+Purpose: Live view of all scored transactions. Auto-refreshes every 15 seconds.
+API calls:
+  GET /api/transactions/queue?limit=100  (polled every 15s)
+
+Header: "Pre-Transaction Scoring Queue" title + "Refresh" button (top right) + last-updated timestamp
+
+Table (colour-coded rows):
+  block rows         →  light red background
+  manual_review rows →  light orange background
+  mfa rows           →  light amber background
+  approve rows       →  light green background
+
+Columns: ID | From Account | To Account | Amount (₹) | Type | Channel |
+         Risk Score (number + colour) | Decision badge | Timestamp
+
+Empty state: "Queue is empty" with Activity icon
+Loading state: "Loading queue…" skeleton
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: /analyst/transactions — Transaction Scorer
+════════════════════════════════════════════════════════════════════════════════
+Purpose: Manual transaction scoring tool. Input a transaction, get instant risk score.
+API calls:
+  POST /api/transactions/score
+
+Split layout (50/50):
+
+LEFT PANEL — Input Form
+  From Account (text input)
+  To Account (text input)
+  Amount (number input, ₹ prefix)
+  Transaction Type (select): RTGS | NEFT | IMPS | UPI | SWIFT
+  Channel (select): netbanking | mobile | branch | atm | api
+  Device Known (toggle/checkbox)
+  IP Address (text input)
+  Geo Location (text input)
+  Currency (text, default INR)
+  [Score Transaction] button (primary, full width, loading spinner)
+
+RIGHT PANEL — Result (appears after submit)
+  Risk Score (large number, colour-coded)
+  Decision badge (BLOCKED / MANUAL REVIEW / MFA REQUIRED / APPROVED)
+  Reason codes (list of tag pills)
+  5 component score bars:
+    Amount Anomaly     × 0.25 weight
+    Time Anomaly       × 0.15 weight
+    Device Risk        × 0.20 weight
+    Beneficiary Risk   × 0.20 weight
+    Graph Risk         × 0.20 weight
+  AI Explanation paragraph (if score >= 30)
+  Pre-transaction ID (monospace, small)
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: /analyst/demo — Demo Simulator
+════════════════════════════════════════════════════════════════════════════════
+Purpose: End-to-end live API demonstration. 34 use cases + custom AI scenario builder.
+API calls: Varies per use case (see use case groups below)
+
+This is the most complex page.
+
+── SECTION 1: USE CASE RUNNER ──────────────────────────────────────────────
+
+TOP CONTROLS
+  Filter tabs: ALL | A | B | C | D | E  (filter by group)
+  "Run All" button (runs all visible use cases in parallel, shows progress bar)
+  Progress bar (animates across while running)
+
+USE CASE GROUPS (colour-coded, collapsible)
+
+  Group A — Pre-Transaction Prevention (blue, shield icon)
+    9 use cases (UC-01 to UC-09)
+    All call POST /api/transactions/score with different payloads
+    Scenarios: approved payment, MFA trigger, account takeover, structuring,
+               hawala, off-hours RTGS, international mule, round-trip test, hospital payment
+
+  Group B — Post-Transaction Investigation (purple, network icon)
+    9 use cases (UC-10 to UC-18)
+    Mix of GET /api/alerts/{id}, GET /api/cases/{id}, GET /api/report/{id}/pdf,
+    GET /api/alerts/{id}/explain
+    Scenarios: circular transfer alert, return-leg alert, ATO alert, structuring alert,
+               dormant account reactivation, synthetic identity, evidence package,
+               FIU report generation, RAG explanation
+
+  Group C — Analyst Dashboard (orange, eye icon)
+    7 use cases (UC-19 to UC-25)
+    Mix of GET /api/alerts, GET /api/dashboard/analyst,
+    POST /api/feedback/confirm, POST /api/knowledge/search
+    Scenarios: alert inbox view, analyst metrics, analyst actions (approve/block/MFA/watchlist/STR)
+
+  Group D — Executive Dashboard (indigo, bar chart icon)
+    5 use cases (UC-26 to UC-30)
+    GET /api/dashboard/executive (various sections)
+    Scenarios: fraud KPIs, regulatory exposure, model health, trend analysis, board summary
+
+  Group E — Learning Loop (teal, brain icon)
+    4 use cases (UC-31 to UC-34)
+    POST /api/feedback/confirm + POST /api/knowledge/search + GET /api/alerts/{id}/explain
+    Scenarios: analyst feedback, adaptive calibration, ChromaDB semantic retrieval, RAG LLM engine
+
+EACH USE CASE CARD (idle state)
+  Header: UC-{id} badge · Group badge · Title
+  Persona line (italic, muted): emoji + analyst persona description
+  Expected decision badge (faint)
+  API endpoint pill (monospace, small)
+  "Run" button (right side)
+  "Navigate →" link (opens the relevant page)
+
+EACH USE CASE CARD (after running — "done" state)
+  Decision badge (large, coloured): BLOCKED / MFA REQUIRED / MANUAL REVIEW / APPROVED
+  Risk score bar (coloured)
+  Duration: "{N}ms" tag
+  Narrative paragraph (plain English explanation of what happened)
+  Expandable step-by-step breakdown:
+    "1. Transaction arrived: {from} → {to}"
+    "2. ₹{amount} | {type} | Channel: {channel}"
+    "3. Device check → ✓ TRUSTED / ✗ UNKNOWN"
+    "4. IP reputation check"
+    "5. 5-signal scoring formula"
+    "6. Weighted sum → Risk Score: {n}/100"
+    "7. Reason codes fired: {codes}"
+    "8. Threshold decision: {label}"
+    "9. LLM briefing / score < 30 — no LLM"
+    "10. Logged + response in {n}ms"
+
+Error state: red border card, "API Error" label, error message text
+
+Loading state: spinner + "Running…" text, pulsing border
+
+── SECTION 2: CUSTOM SCENARIO BUILDER ──────────────────────────────────────
+
+Title: "AI-Powered Custom Scenario Builder"
+Subtitle: "Describe a fraud scenario and let AI generate the transaction parameters"
+
+Text area: "Describe your fraud scenario in plain English…" (min 10 chars)
+
+"Generate with AI" button
+  → calls POST /api/scenarios/generate
+  → populates form fields below with AI-generated values
+  Loading: spinner + "Generating…" text
+  Success: AI narrative card (primary/10 background, Brain icon):
+    "AI Scenario Analysis"
+    Narrative text paragraph
+  Error: red border card (XCircle icon):
+    "Generation failed"
+    Error message text
+
+Form fields (populated by AI or manually):
+  From Account · To Account · Amount · Transaction Type · Channel ·
+  Device Known (toggle) · IP Address · Geo Location
+
+"Run Custom Scenario" button
+  → calls POST /api/transactions/score with form data
+  → shows full risk score result card (same as Transaction Scorer page)
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: /executive — Executive Dashboard
+════════════════════════════════════════════════════════════════════════════════
+Purpose: High-level fraud intelligence for senior leadership.
+API calls:
+  GET /api/dashboard/executive
+
+SECTIONS:
+
+KPI Cards (top row, 4 cards)
+  Total Fraud Detected     — ₹ amount (large, red)
+  Total Fraud Prevented    — ₹ amount (large, green)
+  Detection Rate           — percentage (large)
+  False Positive Rate      — percentage (large)
+  Each with trend arrow and period label ("This Month")
+
+Fraud Trend Chart (Recharts LineChart, full width)
+  X-axis: 12 month labels (Apr 2025 → Mar 2026)
+  Y-axis: ₹ values
+  Line 1: "Fraud Detected" (red, filled area)
+  Line 2: "Fraud Prevented" (green, filled area)
+  Tooltip shows both values on hover
+  Legend below chart
+
+Risk Category Breakdown (Recharts BarChart)
+  X-axis: circular_transfer | account_takeover | synthetic_identity | structuring | mule_network
+  Y-axis: count or ₹ exposure
+  Each bar in distinct colour
+  Title: "Fraud by Category"
+
+Model Health Panel (right column card)
+  Title: "Model Performance"
+  Metrics as labelled progress bars:
+    Accuracy    [=========] 94.2%
+    Precision   [=========] 91.0%
+    Recall      [=========] 87.3%
+    F1 Score    [=========] 89.1%
+  Last Trained: date
+  Explainability Score: number
+
+Compliance Panel (bottom card)
+  Compliance Score: large percentage (coloured — green if >80, amber if 60-80, red if <60)
+  Grid of metrics:
+    SARs Filed        | CTRs Filed
+    Regulatory Exposure (₹) | Pending Reviews
+    Last Audit Date   | Next Audit Date
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: /executive/compliance — Compliance Detail
+════════════════════════════════════════════════════════════════════════════════
+Purpose: Expanded compliance view for CCO/MLRO.
+API calls:
+  GET /api/dashboard/executive (compliance section)
+
+Compliance Score card (large)
+Cards for each metric (SARs filed, CTRs filed, regulatory exposure, pending reviews)
+STR Filing Status table:
+  Columns: Case ID | Title | Due Date | Status (overdue → red, on time → green) | Days Remaining
+Overdue items highlighted in red row background.
+"View Case" link on each row.
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: /executive/model-health — Model Health
+════════════════════════════════════════════════════════════════════════════════
+Purpose: ML model performance monitoring for Head of Risk Technology.
+API calls:
+  GET /api/dashboard/executive (model_health section)
+
+Model Metrics cards (Accuracy, Precision, Recall, F1) — large numbers with coloured backgrounds
+Historical accuracy trend chart (Recharts LineChart, 30-day view)
+Feature importance horizontal bar chart:
+  amount_deviation | time_anomaly | device_risk | beneficiary_risk | graph_risk
+  Each bar coloured, sorted by importance descending
+Last trained date + "Schedule Retraining" button (inactive/display only)
+
+════════════════════════════════════════════════════════════════════════════════
+PAGE: /reports/[id] — Report Preview
+════════════════════════════════════════════════════════════════════════════════
+Purpose: Web-rendered case report preview before PDF download.
+API calls:
+  GET /api/cases/{id}
+
+Top actions bar:
+  "← Back to Case" button (left)
+  "Export PDF" button (right, Download icon) → opens GET /api/report/{id}/pdf in new tab
+
+Report Header Card (border-2 border-primary/20)
+  Shield icon (large, primary colour)
+  Case ID (monospace, large)
+  Report generated timestamp
+  Risk score badge
+  Status badge
+
+Sections rendered as cards:
+  1. Executive Summary — description text
+  2. Subject Information — primary account, title, total exposure, recommended action
+  3. Evidence & Risk Indicators — behavioral, device, network analysis text
+  4. Timeline of Events — same as case detail timeline tab
+  5. Similar Cases — list with similarity scores
+  6. Chain of Custody — SHA-256 hash (monospace, full width)
+
+Loading state: 6 skeleton cards
+Not found state: AlertTriangle icon + "Case {id} not found" + "Go Back" button
+
+--------------------------------------------------------------------------------
+4. COMPONENTS
+--------------------------------------------------------------------------------
+
+RiskGauge
+  SVG circular dial (arc from bottom-left to bottom-right)
+  Colour shifts: green (low) → amber → orange → red (critical)
+  Score number in centre (large, bold, colour-coded)
+  "Risk Score" label below number (muted)
+  Sizes: sm (80px diameter) | lg (120px diameter)
+  Used on: case detail page, alert cards
+
+AlertInbox
+  Reusable alert table component
+  Props: alerts array, onView callback
+  Filterable by severity + status (local state)
+  Sortable by timestamp (default: newest first)
+  Row click or "View" button triggers onView
+
+CaseTable
+  Reusable case table
+  Props: cases array, onOpen callback
+  Sortable columns
+  Row click or "Open" button triggers onOpen
+
+FraudNetwork (ReactFlow component — see Section 5)
+
+DashboardSkeleton
+  Full-page loading skeleton
+  3 rows of pulse blocks: top row (4 small cards), middle (large card), bottom (table rows)
+  Uses Tailwind animate-pulse
+
+EmptyState (shared)
+  Centred icon + title + description
+  Optional action button
+
+ErrorState (shared)
+  Red border card + AlertTriangle icon + error message
+  "Retry" button optional
+
+--------------------------------------------------------------------------------
+5. FRAUD NETWORK GRAPH (ReactFlow)
+--------------------------------------------------------------------------------
+
+Component: FraudNetwork
+Props: data (GraphData), className
+
+NODE TYPES (all use same AccountNode renderer):
+  account      — User icon
+  entity       — Building2 icon
+  device       — Smartphone icon
+  transaction  — CreditCard icon
+
+NODE VISUAL STYLE
+  Rounded rectangle (rounded-xl), min-width 140px
+  Background: card colour
+  Shadow: coloured glow matching risk score
+  Border: 2px, colour = risk score colour
+    risk >= 80  →  border-red-500    shadow-red-500/20
+    risk >= 60  →  border-orange-500 shadow-orange-500/20
+    risk >= 30  →  border-yellow-500 shadow-yellow-500/20
+    risk < 30   →  border-green-500  shadow-green-500/20
+  Flagged nodes: ring-2 ring-red-400 ring-offset-2 (extra red ring around border)
+  Node content:
+    Icon (top-left) + Label (account name, small bold) + ID (10px, muted)
+    Risk score (coloured text, bold)
+    "Flagged" destructive badge (if flagged)
+  Handles: Left (target) + Right (source), muted-foreground colour
+
+EDGE STYLE
+  Normal edges:    gray stroke, 1.5px, arrow marker (gray)
+  Suspicious edges: red (#ef4444) stroke, 2.5px, animated (marching ants), arrow marker (red)
+  Label: formatted currency amount (₹) in small text
+  Label background: card colour (semi-transparent)
+
+LAYOUT ALGORITHM
+  Circular layout — nodes evenly distributed on a circle
+  Radius = max(250, nodeCount × 40)
+  Nodes positioned at angle = (2π × i / nodeCount) − π/2
+
+CONTROLS
+  ReactFlow built-in Controls (bottom-left): zoom in/out/fit
+  ReactFlow MiniMap (bottom-right):
+    Node colours match risk score (red/orange/yellow/green)
+    Mask: background colour at 70% opacity
+  Background: dot grid, gap 20, size 1
+
+CANVAS
+  Height: 500px
+  fitView on load (padding 0.2)
+  minZoom: 0.3 | maxZoom: 2
+  Attribution hidden (proOptions.hideAttribution)
+
+--------------------------------------------------------------------------------
+6. COLOUR CODING SUMMARY (Quick Reference)
+--------------------------------------------------------------------------------
+
+RISK SCORES
+  92/100  critical  → Red     (#ef4444 / text-red-600)
+  85/100  high      → Orange  (#f97316 / text-orange-600)
+  75/100  medium    → Amber   (#f59e0b / text-amber-600)
+  22/100  low       → Green   (#22c55e / text-green-600)
+
+DECISIONS
+  block          → bg-red-100    text-red-700    border-red-200
+  manual_review  → bg-orange-100 text-orange-700 border-orange-200
+  mfa            → bg-amber-100  text-amber-700  border-amber-200
+  approve        → bg-green-100  text-green-700  border-green-200
+
+SEVERITIES
+  critical  → bg-red-100    text-red-700
+  high      → bg-orange-100 text-orange-700
+  medium    → bg-yellow-100 text-yellow-700
+  low       → bg-blue-100   text-blue-700
+
+CASE STATUSES
+  open                  → bg-blue-100   text-blue-700
+  investigating         → bg-yellow-100 text-yellow-700
+  escalated             → bg-red-100    text-red-700
+  confirmed_fraud       → bg-red-100    text-red-800
+  resolved_fraud        → bg-red-50     text-red-600
+  resolved_legitimate   → bg-green-100  text-green-700
+  closed                → bg-gray-100   text-gray-600
+
+RECHARTS PALETTE
+  Primary line:     #3b82f6 (blue)
+  Secondary line:   #22c55e (green)
+  Danger area:      #ef4444 (red)
+  Warning area:     #f59e0b (amber)
+  Chart grid:       #e2e8f0 (light gray)
+  Tooltip bg:       white with shadow
+
+--------------------------------------------------------------------------------
+7. TYPESCRIPT TYPE DEFINITIONS
+--------------------------------------------------------------------------------
+
+type Severity = 'low' | 'medium' | 'high' | 'critical'
+type AlertStatus = 'new' | 'investigating' | 'resolved' | 'escalated'
+type CaseStatus = 'open' | 'investigating' | 'escalated' | 'resolved_fraud' |
+                  'resolved_legitimate' | 'closed' | 'confirmed_fraud'
+type Decision = 'approve' | 'mfa' | 'block' | 'manual_review'
+
+interface Alert {
+  id: string
+  case_id: string | null
+  transaction_id: string
+  alert_type: string
+  severity: Severity
+  status: AlertStatus
+  title: string
+  description: string
+  risk_score: number
+  timestamp: string
+  account_id: string
+  account_name: string
+  amount: number
+  currency: string
+}
+
+interface CaseDetailResponse {
+  id: string
+  title: string
+  description: string
+  status: CaseStatus
+  risk_score: number
+  total_exposure: number
+  primary_account: string
+  assigned_to: string
+  created_at: string
+  updated_at: string
+  recommended_action: string
+  transaction_ids: string[]
+  alerts: Alert[]
+  evidence: {
+    behavioral_analysis: { deviation: number, baseline_avg_amount: number, current_amount: number, time_anomaly: boolean }
+    device_analysis: { known_device: boolean, device_type: string, os: string, ip_address: string, ip_risk: string, geo_location: string }
+    network_analysis: { circular_transfers: boolean, hop_count: number, connected_suspicious_accounts: number, layering_detected: boolean }
+  }
+  timeline: Array<{ timestamp: string, event_type: string, description: string }>
+  similar_cases: Array<{ id: string, title: string, similarity: number, outcome: string, risk_score: number }>
+  custody_hash: string
+}
+
+interface GraphData {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  suspicious_paths: string[][]
+  clusters: GraphCluster[]
+}
+
+interface GraphNode {
+  id: string
+  label: string
+  type: string
+  risk_score: number
+  flagged: boolean
+  metadata: Record<string, unknown>
+}
+
+interface GraphEdge {
+  id: string
+  source: string
+  target: string
+  amount: number
+  currency: string
+  timestamp: string
+  suspicious: boolean
+}
+
+interface RiskScore {
+  transaction_id: string
+  score: number
+  decision: Decision
+  reason_codes: string[]
+  behavioral_mismatch: number
+  device_mismatch: boolean
+  amount_anomaly: number
+  time_anomaly: number
+  beneficiary_risk: number
+  graph_risk: number
+  explanation: string | null
+}
+
+interface AnalystDashboardResponse {
+  total_alerts: number
+  open_cases: number
+  blocked_today: number
+  avg_risk_score: number
+  recent_alerts: Alert[]
+  open_case_summaries: CaseSummary[]
+}
+
+interface ExecutiveDashboardResponse {
+  total_fraud_detected: number
+  total_fraud_prevented: number
+  detection_rate: number
+  false_positive_rate: number
+  monthly_trends: Array<{ month: string, detected: number, prevented: number }>
+  risk_categories: Array<{ category: string, count: number, exposure: number }>
+  model_health: { accuracy: number, precision: number, recall: number, f1_score: number, last_trained: string }
+  compliance: { score: number, sars_filed: number, ctrs_filed: number, regulatory_exposure: number, last_audit: string, next_audit: string }
+}
+
+--------------------------------------------------------------------------------
+8. FORMATTING UTILITIES
+--------------------------------------------------------------------------------
+
+formatINR(amount: number) → "₹42,00,000" (en-IN locale)
+formatCurrency(amount: number) → "₹42.0L" or "₹4.2Cr" (compact)
+formatDate(iso: string) → "Apr 4, 2026"
+formatDateTime(iso: string) → "Apr 4, 2026, 02:15 AM IST"
+severityColor(severity: string) → Tailwind class string
+statusColor(status: string) → Tailwind class string
+decisionColor(decision: string) → Tailwind class string
+
+All monetary amounts:
+  Currency: INR (₹)
+  Locale: en-IN
+  Large amounts written as: ₹4.2Cr (crores) or ₹42L (lakhs) in summaries
+  Full amounts in tables: ₹42,00,000
+
+All timestamps:
+  Timezone: IST (Asia/Kolkata, UTC+5:30)
+  Display format: relative ("2 hours ago") or absolute ("Apr 4, 2026 02:15 AM")
+
+--------------------------------------------------------------------------------
+9. INTERACTION PATTERNS
+--------------------------------------------------------------------------------
+
+DATA FETCHING
+  All via useEffect + fetch() (no SWR / React Query)
+  Pattern: setLoading(true) → fetch → setData → setLoading(false)
+  Errors: caught, console.error, conditional empty/error state UI
+
+LOADING STATES
+  Full-page loads: DashboardSkeleton component
+  Inline loads: Skeleton component (animated pulse)
+  Button loads: spinner icon replaces button icon, disabled
+
+ANIMATIONS (Framer Motion)
+  Page sections: motion.div with initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+  Stagger: each card delays by 0.1s × index
+  Transition: spring or ease, ~0.3s
+
+REAL-TIME
+  Pre-txn queue: setInterval every 15 seconds
+  Header clock: setInterval every 1 second (IST time)
+
+NAVIGATION
+  Programmatic: useRouter().push(path)
+  Links: Next.js <Link> component
+  External (PDF): window.open(url, '_blank')
+
+FORMS
+  Fully controlled: useState per field
+  Validation: basic (required, min length) — no form library
+  Submit: async function, try/catch, loading state
+
+NOTIFICATIONS / TOASTS
+  None implemented — errors shown as inline error cards/callouts
+
+TABS
+  shadcn/ui Tabs component
+  Default active tab: first tab
+  Tab state: local component state (not URL)
+
+PAGINATION
+  Local state: page number + page size
+  Controls: "Previous" / "Next" buttons + "Page X of Y" text
+  No URL-based pagination
+
+--------------------------------------------------------------------------------
+10. RESPONSIVE BREAKPOINTS
+--------------------------------------------------------------------------------
+
+Note: App is desktop-optimised. Sidebar is always visible (no hamburger).
+
+Grid layouts:
+  KPI cards:      grid-cols-1 sm:grid-cols-2 lg:grid-cols-4
+  Evidence cards: grid-cols-1 md:grid-cols-3
+  Use case grid:  single column on small, 2-col on large
+  Split layout (scorer): grid-cols-1 md:grid-cols-2
+
+Sidebar: fixed 240px, always visible (min-width: lg)
+Content: ml-[240px] on desktop
+
+--------------------------------------------------------------------------------
+11. ACCESSIBILITY
+--------------------------------------------------------------------------------
+
+  - All buttons have descriptive text or aria-label
+  - Badges use aria-label for screen readers
+  - Form inputs have associated labels
+  - Focus rings: ring-2 ring-ring ring-offset-2 on interactive elements
+  - Colour is never the sole indicator — badges always include text
+
+--------------------------------------------------------------------------------
+12. API INTEGRATION OVERVIEW
+--------------------------------------------------------------------------------
+
+BASE URL: http://localhost:8000 (or NEXT_PUBLIC_API_URL env var)
+
+Endpoints used by frontend:
+  POST  /api/transactions/score         Risk scoring
+  GET   /api/transactions/queue         Pre-txn queue
+  GET   /api/alerts                     Alert list (with filters)
+  GET   /api/alerts/{id}                Alert detail
+  POST  /api/alerts/{id}/explain        AI explanation
+  GET   /api/cases                      Case list
+  GET   /api/cases/{id}                 Case detail
+  GET   /api/graph/{case_id}            Transaction network graph
+  GET   /api/report/{case_id}/pdf       PDF download
+  GET   /api/dashboard/analyst          Analyst KPIs
+  GET   /api/dashboard/executive        Executive KPIs
+  POST  /api/feedback/confirm           Submit analyst decision
+  POST  /api/knowledge/search           ChromaDB semantic search
+  POST  /api/scenarios/generate         AI scenario generation
+
+All calls: JSON request/response except PDF (binary stream)
+Auth: None (demo mode)
+CORS: Backend allows all origins
+
+================================================================================
+END OF SPEC
+================================================================================
