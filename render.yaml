@@ -52,9 +52,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Internal Render private network URL — Next.js rewrites proxy /api/* here
+      # Public Render API URL — Next.js server-side rewrites proxy /api/* here
       - key: API_INTERNAL_URL
-        value: http://chakravyuh-api:10000
+        value: https://chakravyuh-api.onrender.com
       # Keep empty in production — browser uses relative /api/* paths via rewrite
       - key: NEXT_PUBLIC_API_URL
         value: ""

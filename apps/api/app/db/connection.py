@@ -35,8 +35,8 @@ async def init_db(host: str, port: int, database: str, user: str, password: str,
 
         pool_kwargs = dict(min_size=2, max_size=10, command_timeout=10)
         if dsn:
-            # Render external DB requires SSL
-            pool_kwargs["ssl"] = "require"
+            # Render external DB requires SSL — use True to create a default SSL context
+            pool_kwargs["ssl"] = True
             _pool = await asyncio.wait_for(
                 asyncpg.create_pool(dsn=dsn, **pool_kwargs),
                 timeout=10,
