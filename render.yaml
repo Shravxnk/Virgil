@@ -4,59 +4,47 @@
 # HOW TO DEPLOY:
 #   1. Push this repo to GitHub/GitLab
 #   2. In Render dashboard → New → Blueprint → connect your repo
-#   3. After deploy, set secrets marked `sync: false` manually in:
-#      chakravyuh-api → Environment tab:
+#   3. After deploy, set secrets marked `sync: false` in Render dashboard:
+#      chakravyuh-api → Environment:
 #        OPENAI_API_KEY  → your OpenAI key
-#        DATABASE_URL    → full postgres connection string from your other Render account
-#                          e.g. postgresql://user:pass@dpg-xxxx.render.com/dbname
+#        DATABASE_URL    → full postgres connection string
+#      chakravyuh-web → Environment:
+#        NEXT_PUBLIC_API_URL → https://<your-api-service-name>.onrender.com
+#          (find the exact URL in Render dashboard → chakravyuh-api → Settings → URL)
 
 services:
 
-  # ── Backend: FastAPI ────────────────────────────────────────────────────────
+  # ── Backend: FastAPI (native Python) ───────────────────────────────────────
   - type: web
     name: chakravyuh-api
-    runtime: docker
-    dockerfilePath: ./docker/api.Dockerfile
-    dockerContext: .
+    runtime: python
     plan: free
+    buildCommand: pip install -r apps/api/requirements.txt
+    startCommand: cd apps/api && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: PYTHON_ENV
         value: production
-
-      # ── OpenAI ──────────────────────────────────────────────────────────────
-      # Set in: Render dashboard → chakravyuh-api → Environment
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL
         value: gpt-4o
-
-      # ── External PostgreSQL (different Render account) ───────────────────────
-      # Set DATABASE_URL in Render dashboard → chakravyuh-api → Environment
-      # Get it from: other Render account → your DB service → Connect → External URL
-      # Format: postgresql://USER:PASSWORD@HOST/DBNAME
       - key: DATABASE_URL
         sync: false
-
-      # ── Server ──────────────────────────────────────────────────────────────
       - key: API_HOST
         value: "0.0.0.0"
 
-  # ── Frontend: Next.js ───────────────────────────────────────────────────────
+  # ── Frontend: Next.js (native Node) ────────────────────────────────────────
   - type: web
     name: chakravyuh-web
-    runtime: docker
-    dockerfilePath: ./docker/web.Dockerfile
-    dockerContext: .
+    runtime: node
     plan: free
+    buildCommand: cd apps/web && npm ci && npm run build
+    startCommand: cd apps/web && npm start
     envVars:
       - key: NODE_ENV
         value: production
-      # Public Render API URL — Next.js server-side rewrites proxy /api/* here
-      - key: API_INTERNAL_URL
-        value: https://chakravyuh-api.onrender.com
-      # Keep empty in production — browser uses relative /api/* paths via rewrite
+      # IMPORTANT: Set this in Render dashboard → chakravyuh-web → Environment
+      # Value: https://<your-api-url>.onrender.com  (get from chakravyuh-api → Settings)
       - key: NEXT_PUBLIC_API_URL
-        value: ""
-
-#       property: password
+        sync: false

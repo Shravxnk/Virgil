@@ -9,10 +9,10 @@ import type {
   ExecutiveDashboardResponse,
 } from '@/types';
 
-// In production (Render) NEXT_PUBLIC_API_URL is empty → relative paths hit
-// the Next.js rewrite proxy → Render internal API. In local dev, .env.local
-// sets NEXT_PUBLIC_API_URL=http://localhost:8000 for direct calls.
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+// In production (Render): NEXT_PUBLIC_API_URL is set in the Render dashboard
+// to the full API URL e.g. https://chakravyuh-api-fdlt.onrender.com
+// In local dev: set NEXT_PUBLIC_API_URL=http://localhost:8000 in .env.local
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
