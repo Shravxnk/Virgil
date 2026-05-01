@@ -9,7 +9,7 @@ Auto-seeded from data_generator at import time so tests and the live app
 always have data regardless of whether the lifespan context has started.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 _alerts: dict[str, dict] = {}

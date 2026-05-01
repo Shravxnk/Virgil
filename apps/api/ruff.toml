@@ -1,0 +1,10 @@
+# Ruff configuration for Chakravyuh API
+line-length = 200
+
+[lint]
+select = ["E", "F", "I", "W"]
+ignore = [
+    "E501",  # line too long — handled by formatter, not enforced in CI
+    "I001",  # import sort — not required in this project
+    "E701",  # multiple statements on one line — used intentionally in some helpers
+]

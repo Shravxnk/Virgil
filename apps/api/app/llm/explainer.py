@@ -524,8 +524,6 @@ def generate_scenario_from_description(description: str) -> dict:
     desc_lower = description.lower()
     is_fraud = any(w in desc_lower for w in ["fraud", "suspicious", "unknown", "mule", "takeover", "launder", "block", "fake", "stolen", "hack"])
     is_large = any(w in desc_lower for w in ["large", "crore", "lakh", "million", "huge", "big", "high"])
-    is_night = any(w in desc_lower for w in ["night", "3am", "2am", "midnight", "late"])
-
     return {
         "from_account": "ACC-SCENARIO-01",
         "to_account": "ACC-MULE-99" if is_fraud else "ACC-SAFE-01",

@@ -1,7 +1,6 @@
 """Dashboard service: assembles analyst and executive dashboard data from live DB."""
 
 import asyncio
-import json
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone

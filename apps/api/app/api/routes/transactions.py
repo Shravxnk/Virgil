@@ -31,8 +31,6 @@ def _fast_suggestion(item: dict) -> dict:
     device_mismatch = signals.get("device_mismatch", False)
     amount_anomaly = signals.get("amount_anomaly", 0) or 0
     graph_risk = signals.get("graph_risk", 0) or 0
-    amount = item.get("amount", 0)
-
     if score >= 75 or (device_mismatch and amount_anomaly > 5) or graph_risk > 0.5:
         return {
             "suggestion": "REJECT",

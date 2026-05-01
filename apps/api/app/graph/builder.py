@@ -2,7 +2,7 @@
 
 import networkx as nx
 
-from app.core.data_loader import load_user_profiles, get_profile_by_account
+from app.core.data_loader import get_profile_by_account
 from app.db.repositories.runtime_store import list_transactions
 
 

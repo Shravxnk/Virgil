@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import APIRouter
 
-from app.db.repositories.runtime_store import list_cases, list_alerts
+from app.db.repositories.runtime_store import list_cases
 
 router = APIRouter(prefix="/compliance", tags=["Compliance"])
 
