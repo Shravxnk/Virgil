@@ -311,7 +311,7 @@ async def seed_default_data():
     try:
         from app.core.data_generator import generate_seed_data
         data = generate_seed_data()
-        profiles = data.get("user_profiles", [])
+        profiles = data.get("profiles", data.get("user_profiles", []))
         pool = connection.get_pool()
         async with pool.acquire() as conn:
             # clear existing
