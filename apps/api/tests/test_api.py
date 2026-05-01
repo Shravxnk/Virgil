@@ -167,7 +167,7 @@ def test_high_risk_transaction_creates_alert_and_case():
     """A block-decision transaction (high risk IP + unknown device + large amount) must auto-create an alert and case."""
     response = client.post("/api/transactions/score", json={
         "from_account": "ACC-003",
-        "to_account": "ACC-999",
+        "to_account": "ACC-011",
         "amount": 9500000,
         "txn_type": "RTGS",
         "channel": "netbanking",
