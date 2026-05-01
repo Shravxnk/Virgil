@@ -6,18 +6,18 @@ import sys
 import traceback
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+# Ensure project root is in path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))  # noqa: E402
+
+from fastapi import FastAPI, Request  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import JSONResponse  # noqa: E402
+
+from app.api.routes import alerts, cases, compliance, dashboard, feedback, graph, reports, risk, scenarios, transactions  # noqa: E402
+from app.config import get_settings  # noqa: E402
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Ensure project root is in path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-from app.api.routes import alerts, cases, compliance, dashboard, feedback, graph, reports, risk, scenarios, transactions
-from app.config import get_settings
 
 
 async def _seed_pg_sample_data() -> None:
@@ -217,7 +217,7 @@ async def debug_info():
         try:
             async with connection.get_pool().acquire() as conn:
                 pg_ok = bool(await conn.fetchval("SELECT 1"))
-        except Exception as e:
+        except Exception:
             pg_ok = False
 
     return {
