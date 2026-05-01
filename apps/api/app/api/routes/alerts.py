@@ -1,6 +1,7 @@
 """Alert routes."""
 
 import asyncio
+import logging
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -8,6 +9,7 @@ from app.llm.explainer import generate_alert_explanation
 from app.schemas.alert import AlertListResponse, AlertResponse
 from app.services.alert_service import get_alert_by_id, get_all_alerts
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/alerts", tags=["Alerts"])
 
 
@@ -19,7 +21,11 @@ async def list_alerts(
     offset: int = Query(0, ge=0),
 ):
     """List all alerts with optional filtering."""
-    return await get_all_alerts(severity=severity, status=status, limit=limit, offset=offset)
+    try:
+        return await get_all_alerts(severity=severity, status=status, limit=limit, offset=offset)
+    except Exception as exc:
+        logger.exception("list_alerts failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Alerts error: {exc}") from exc
 
 
 @router.get("/{alert_id}", response_model=AlertResponse)

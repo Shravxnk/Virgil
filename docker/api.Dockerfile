@@ -14,6 +14,7 @@ COPY apps/api/ /app/
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV DATA_DIR=/app/data
 
 # Render injects PORT=10000; fall back to 8000 for local docker-compose
 EXPOSE 8000

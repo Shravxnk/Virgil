@@ -1,11 +1,17 @@
 """Chakravyuh API — AI-Powered Fraud Intelligence System."""
 
+import logging
 import os
 import sys
+import traceback
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Ensure project root is in path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -162,6 +168,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    tb = traceback.format_exc()
+    logger.error("Unhandled exception on %s %s:\n%s", request.method, request.url.path, tb)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error": str(exc), "type": type(exc).__name__},
+    )
+
 # Register route modules
 app.include_router(risk.router, prefix="/api")
 app.include_router(alerts.router, prefix="/api")
@@ -181,6 +197,39 @@ async def health_check():
         "status": "healthy",
         "service": "chakravyuh-api",
         "version": settings.app_version,
+    }
+
+
+@app.get("/api/debug")
+async def debug_info():
+    """Diagnostic endpoint — exposes config, DB status, and data counts for troubleshooting."""
+    from app.db import connection
+    from app.db.repositories.runtime_store import list_alerts, list_cases, list_transactions
+    from app.config import get_settings
+
+    cfg = get_settings()
+    data_dir_exists = os.path.isdir(cfg.data_dir)
+    sample_dir = os.path.join(cfg.data_dir, "sample")
+    sample_files = os.listdir(sample_dir) if os.path.isdir(sample_dir) else []
+
+    pg_ok = False
+    if connection.PG_AVAILABLE and connection.get_pool():
+        try:
+            async with connection.get_pool().acquire() as conn:
+                pg_ok = bool(await conn.fetchval("SELECT 1"))
+        except Exception as e:
+            pg_ok = False
+
+    return {
+        "pg_available": connection.PG_AVAILABLE,
+        "pg_ping": pg_ok,
+        "database_url_set": bool(cfg.database_url),
+        "data_dir": cfg.data_dir,
+        "data_dir_exists": data_dir_exists,
+        "sample_files": sample_files,
+        "runtime_alerts": len(list_alerts()),
+        "runtime_cases": len(list_cases()),
+        "runtime_transactions": len(list_transactions()),
     }
 
 

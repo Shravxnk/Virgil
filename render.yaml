@@ -4,14 +4,11 @@
 # HOW TO DEPLOY:
 #   1. Push this repo to GitHub/GitLab
 #   2. In Render dashboard → New → Blueprint → connect your repo
-#   3. Render will auto-detect this file and create both services
-#   4. After first deploy, set OPENAI_API_KEY in the chakravyuh-api
-#      service's Environment tab in the Render dashboard
-#
-# Both services share the same repo but deploy independently.
-# The frontend proxies all /api/* calls through Next.js rewrites
-# to the API service using Render's internal private network,
-# so no CORS config or public API exposure is needed from the browser.
+#   3. After deploy, set secrets marked `sync: false` manually in:
+#      chakravyuh-api → Environment tab:
+#        OPENAI_API_KEY  → your OpenAI key
+#        DATABASE_URL    → full postgres connection string from your other Render account
+#                          e.g. postgresql://user:pass@dpg-xxxx.render.com/dbname
 
 services:
 
@@ -26,10 +23,24 @@ services:
     envVars:
       - key: PYTHON_ENV
         value: production
+
+      # ── OpenAI ──────────────────────────────────────────────────────────────
+      # Set in: Render dashboard → chakravyuh-api → Environment
       - key: OPENAI_API_KEY
-        sync: false   # ← set this manually in Render dashboard after deploy
+        sync: false
       - key: OPENAI_MODEL
         value: gpt-4o
+
+      # ── External PostgreSQL (different Render account) ───────────────────────
+      # Set DATABASE_URL in Render dashboard → chakravyuh-api → Environment
+      # Get it from: other Render account → your DB service → Connect → External URL
+      # Format: postgresql://USER:PASSWORD@HOST/DBNAME
+      - key: DATABASE_URL
+        sync: false
+
+      # ── Server ──────────────────────────────────────────────────────────────
+      - key: API_HOST
+        value: "0.0.0.0"
 
   # ── Frontend: Next.js ───────────────────────────────────────────────────────
   - type: web
@@ -41,41 +52,11 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Internal URL used by Next.js rewrites (server-side only).
-      # "chakravyuh-api" is the service name above — Render resolves it on
-      # the private network. Port 10000 is Render's internal default.
+      # Internal Render private network URL — Next.js rewrites proxy /api/* here
       - key: API_INTERNAL_URL
         value: http://chakravyuh-api:10000
-      # Leave NEXT_PUBLIC_API_URL empty so the browser uses relative /api/*
-      # paths that hit the Next.js rewrite proxy (avoids CORS entirely).
+      # Keep empty in production — browser uses relative /api/* paths via rewrite
       - key: NEXT_PUBLIC_API_URL
         value: ""
 
-# ── Optional: PostgreSQL (uncomment to enable persistent DB) ─────────────────
-# databases:
-#   - name: chakravyuh-db
-#     plan: free
-#     databaseName: chakravyuh
-#     user: chakravyuh
-#
-# Add these to chakravyuh-api envVars above when using the DB:
-#   - key: DB_HOST
-#     fromDatabase:
-#       name: chakravyuh-db
-#       property: host
-#   - key: DB_PORT
-#     fromDatabase:
-#       name: chakravyuh-db
-#       property: port
-#   - key: DB_NAME
-#     fromDatabase:
-#       name: chakravyuh-db
-#       property: database
-#   - key: DB_USER
-#     fromDatabase:
-#       name: chakravyuh-db
-#       property: user
-#   - key: DB_PASSWORD
-#     fromDatabase:
-#       name: chakravyuh-db
 #       property: password

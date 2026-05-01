@@ -1,6 +1,7 @@
 """Case routes."""
 
 import asyncio
+import logging
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -8,6 +9,7 @@ from app.llm.explainer import generate_case_summary
 from app.schemas.case import CaseDetailResponse, CaseListResponse
 from app.services.case_service import get_all_cases, get_case_detail
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/cases", tags=["Cases"])
 
 
@@ -18,7 +20,11 @@ async def list_cases(
     offset: int = Query(0, ge=0),
 ):
     """List all cases with optional status filtering."""
-    return await get_all_cases(status=status, limit=limit, offset=offset)
+    try:
+        return await get_all_cases(status=status, limit=limit, offset=offset)
+    except Exception as exc:
+        logger.exception("list_cases failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Cases error: {exc}") from exc
 
 
 @router.get("/{case_id}", response_model=CaseDetailResponse)
