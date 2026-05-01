@@ -1,12 +1,8 @@
 'use client';
 
 /**
- * GPay Mock — Mobile-first pre-transaction payment UI
- *
- * Open on any phone/tablet: /gpay
- * Captures device name + geolocation, submits to /api/transactions/score,
- * shows real-time approve / MFA / block result, and broadcasts to the
- * analyst dashboard via SSE.
+ * GPay Mock — Google Pay-style white theme mobile UI
+ * Real device model detection via Client Hints API + UA fallback
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -38,56 +34,47 @@ interface ScoreResult {
   scored_at: string;
 }
 
-// ── Decision config ────────────────────────────────────────────────────────
-const DECISION = {
-  approve: {
-    emoji: '✓',
-    label: 'Payment Approved',
-    sub: 'Transaction processed successfully',
-    bg: 'linear-gradient(135deg, #065f46 0%, #064e3b 100%)',
-    border: '#10b981',
-    glow: 'rgba(16,185,129,0.4)',
-    color: '#6ee7b7',
-  },
-  mfa: {
-    emoji: '🔐',
-    label: 'Verify Your Identity',
-    sub: 'Additional authentication required',
-    bg: 'linear-gradient(135deg, #1e3a5f 0%, #1e3049 100%)',
-    border: '#3b82f6',
-    glow: 'rgba(59,130,246,0.4)',
-    color: '#93c5fd',
-  },
-  manual_review: {
-    emoji: '⏳',
-    label: 'Under Review',
-    sub: 'Our fraud team is reviewing this payment',
-    bg: 'linear-gradient(135deg, #451a03 0%, #3c1a00 100%)',
-    border: '#f59e0b',
-    glow: 'rgba(245,158,11,0.4)',
-    color: '#fcd34d',
-  },
-  block: {
-    emoji: '⛔',
-    label: 'Payment Blocked',
-    sub: 'High-risk transaction — contact your bank',
-    bg: 'linear-gradient(135deg, #450a0a 0%, #3b0000 100%)',
-    border: '#ef4444',
-    glow: 'rgba(239,68,68,0.4)',
-    color: '#fca5a5',
-  },
-};
+// ── Real device name via Client Hints API (Chrome/Edge Android) ───────────
+async function getDeviceName(): Promise<string> {
+  // Chrome/Edge on Android: gives real model name e.g. "Pixel 7", "SM-S918B"
+  if (typeof navigator !== 'undefined' && 'userAgentData' in navigator) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const uaData = (navigator as any).userAgentData;
+      const hints = await uaData.getHighEntropyValues(['model', 'platform', 'platformVersion']);
+      if (hints.model && hints.model.trim()) return hints.model.trim();
+      if (hints.platform) {
+        const ver = hints.platformVersion ? ` ${hints.platformVersion}` : '';
+        return `${hints.platform}${ver}`.trim();
+      }
+    } catch (_) { /* fall through */ }
+  }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-function getDeviceName(): string {
-  const ua = navigator.userAgent;
-  if (/iPhone/.test(ua)) return 'iPhone';
-  if (/iPad/.test(ua)) return 'iPad';
-  const model = ua.match(/\(([^)]+)\)/)?.[1]?.split(';')[0]?.trim();
-  if (model) return model;
-  if (/Android/.test(ua)) return 'Android Device';
-  if (/Mac/.test(ua)) return 'MacBook';
-  if (/Win/.test(ua)) return 'Windows PC';
+  // Fallback: UA string parsing
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+
+  // iOS — extract model from UA (iOS 15 and earlier include "iPhone OS X_X")
+  if (/iPhone/.test(ua)) {
+    const ios = ua.match(/iPhone OS (\d+_\d+)/);
+    return ios ? `iPhone (iOS ${ios[1].replace('_', '.')})` : 'iPhone';
+  }
+  if (/iPad/.test(ua)) {
+    const ios = ua.match(/OS (\d+_\d+)/);
+    return ios ? `iPad (iOS ${ios[1].replace('_', '.')})` : 'iPad';
+  }
+
+  // Android — extract model from the parenthetical e.g. "Linux; Android 13; Redmi Note 12 Build/..."
+  const android = ua.match(/Android[^;]*;\s*([^;)]+?)(?:\s+Build\/|\))/);
+  if (android) {
+    const model = android[1].trim();
+    if (model && model !== 'Linux' && model.length > 1) return model;
+    return 'Android Device';
+  }
+
+  if (/CrOS/.test(ua)) return 'Chromebook';
+  if (/Macintosh/.test(ua)) return 'MacBook';
+  if (/Windows/.test(ua)) return 'Windows PC';
+  if (/Linux/.test(ua)) return 'Linux PC';
   return 'Unknown Device';
 }
 
@@ -97,37 +84,35 @@ async function getGeoLocation(): Promise<string> {
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve(`${pos.coords.latitude.toFixed(4)},${pos.coords.longitude.toFixed(4)}`),
       () => resolve(''),
-      { timeout: 5000 },
+      { timeout: 8000 },
     );
   });
 }
 
-// ── GPay Contact Avatar ────────────────────────────────────────────────────
-function Avatar({ name, size = 48 }: { name: string; size?: number }) {
+// ── Avatar (Google-style colorful circle) ─────────────────────────────────
+const GPAY_COLORS = ['#4285F4','#EA4335','#FBBC04','#34A853','#FF6D00','#46BDC6','#7B1FA2','#E91E63'];
+function Avatar({ name, size = 44 }: { name: string; size?: number }) {
   const initial = name?.[0]?.toUpperCase() ?? '?';
-  const hue = (name?.charCodeAt(0) ?? 65) * 137 % 360;
+  const color = GPAY_COLORS[(name?.charCodeAt(0) ?? 65) % GPAY_COLORS.length];
   return (
     <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: `hsl(${hue},55%,45%)`,
+      width: size, height: size, borderRadius: '50%', background: color,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontWeight: 700, fontSize: size * 0.38, color: '#fff',
-      flexShrink: 0,
+      fontWeight: 700, fontSize: size * 0.4, color: '#fff', flexShrink: 0,
+      fontFamily: '"Google Sans", Roboto, sans-serif',
     }}>{initial}</div>
   );
 }
 
-// ── Quick Amount Chip ──────────────────────────────────────────────────────
-function Chip({ val, active, onClick }: { val: number; active: boolean; onClick: () => void }) {
+// ── Google "G" logo SVG ────────────────────────────────────────────────────
+function GPLogo({ size = 28 }: { size?: number }) {
   return (
-    <button onClick={onClick} style={{
-      padding: '6px 14px', borderRadius: 20, border: `1px solid ${active ? '#4ade80' : 'rgba(255,255,255,0.12)'}`,
-      background: active ? 'rgba(74,222,128,0.12)' : 'rgba(255,255,255,0.06)',
-      color: active ? '#4ade80' : 'rgba(255,255,255,0.75)',
-      fontSize: 13, fontWeight: 600, cursor: 'pointer',
-    }}>
-      ₹{val >= 1000 ? `${val / 1000}K` : val}
-    </button>
+    <svg width={size} height={size} viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
   );
 }
 
@@ -142,26 +127,24 @@ export default function GPayPage() {
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'form' | 'confirm' | 'result'>('form');
-  const [deviceName, setDeviceName] = useState('');
+  const [deviceName, setDeviceName] = useState('Detecting device...');
   const [geoLoc, setGeoLoc] = useState('');
   const [geoLoading, setGeoLoading] = useState(false);
   const amtRef = useRef<HTMLInputElement>(null);
 
-  // Load accounts on mount
   useEffect(() => {
+    // Load accounts
     fetch(`${API_BASE}/api/accounts`)
       .then(r => r.json())
       .then(d => {
         const list: Account[] = d.accounts || [];
         setAccounts(list);
-        if (list.length >= 2) {
-          setFromId(list[0].id);
-          setToId(list[1].id);
-        }
+        if (list.length >= 2) { setFromId(list[0].id); setToId(list[1].id); }
       })
       .catch(() => setError('Cannot reach API. Check NEXT_PUBLIC_API_URL.'));
 
-    setDeviceName(getDeviceName());
+    // Async real device name
+    getDeviceName().then(setDeviceName);
   }, []);
 
   const requestGeo = useCallback(async () => {
@@ -177,22 +160,17 @@ export default function GPayPage() {
 
   const handlePay = async () => {
     if (!fromId || !toId || !amount || fromId === toId) return;
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
       const loc = geoLoc || await requestGeo();
       const res = await fetch(`${API_BASE}/api/transactions/score`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from_account: fromId,
-          to_account: toId,
-          amount: parseFloat(amount),
-          txn_type: txnType,
-          channel: 'mobile',
+          from_account: fromId, to_account: toId,
+          amount: parseFloat(amount), txn_type: txnType, channel: 'mobile',
           device_id: deviceName.replace(/\s+/g, '_').toLowerCase(),
-          device_name: deviceName,
-          device_known: false,
+          device_name: deviceName, device_known: false,
           geo_location: loc || undefined,
         }),
       });
@@ -201,188 +179,145 @@ export default function GPayPage() {
         throw new Error(err.detail || `HTTP ${res.status}`);
       }
       const data: ScoreResult = await res.json();
-      setResult(data);
-      setStep('result');
-      // Notify same-browser analytics pages
+      setResult(data); setStep('result');
       localStorage.setItem('pretxn_scored', String(Date.now()));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Payment failed');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const reset = () => { setResult(null); setAmount(''); setStep('form'); setError(''); };
 
-  // ── Result screen ──────────────────────────────────────────────────────
+  // ── RESULT SCREEN ──────────────────────────────────────────────────────
   if (step === 'result' && result) {
-    const cfg = DECISION[result.decision] ?? DECISION.approve;
+    const configs = {
+      approve: { icon: '✓', iconBg: '#34A853', iconColor: '#fff', title: 'Payment Sent!', sub: 'Transaction completed successfully', accent: '#34A853', bg: '#fff', pillBg: '#E8F5E9', pillText: '#2E7D32' },
+      mfa:     { icon: '🔐', iconBg: '#4285F4', iconColor: '#fff', title: 'Verify Identity', sub: 'Check your phone for an OTP to complete payment', accent: '#4285F4', bg: '#fff', pillBg: '#E3F2FD', pillText: '#1565C0' },
+      manual_review: { icon: '⏳', iconBg: '#FBBC04', iconColor: '#fff', title: 'Under Review', sub: 'Our team is reviewing this payment', accent: '#F9A825', bg: '#fff', pillBg: '#FFF8E1', pillText: '#F57F17' },
+      block:   { icon: '✕', iconBg: '#EA4335', iconColor: '#fff', title: 'Payment Declined', sub: 'High-risk transaction blocked for your safety', accent: '#EA4335', bg: '#fff', pillBg: '#FFEBEE', pillText: '#C62828' },
+    };
+    const cfg = configs[result.decision] ?? configs.approve;
     return (
-      <div style={{
-        minHeight: '100dvh', background: cfg.bg,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: 24, fontFamily: 'system-ui, -apple-system, sans-serif',
-      }}>
-        {/* Glow ring */}
-        <div style={{
-          width: 110, height: 110, borderRadius: '50%',
-          border: `3px solid ${cfg.border}`,
-          boxShadow: `0 0 40px ${cfg.glow}, inset 0 0 20px ${cfg.glow}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 44, marginBottom: 28,
-          animation: 'pop 0.4s cubic-bezier(0.34,1.56,0.64,1)',
-        }}>
-          {cfg.emoji}
+      <div style={{ minHeight: '100dvh', background: '#F8F9FA', fontFamily: '"Google Sans", Roboto, "Helvetica Neue", sans-serif', display: 'flex', flexDirection: 'column' }}>
+        {/* Header bar */}
+        <div style={{ background: '#fff', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #E8EAED' }}>
+          <GPLogo size={22} />
+          <span style={{ fontWeight: 600, fontSize: 17, color: '#202124' }}>Google Pay</span>
         </div>
 
-        <h1 style={{ color: cfg.color, fontSize: 24, fontWeight: 700, margin: '0 0 8px', textAlign: 'center' }}>
-          {cfg.label}
-        </h1>
-        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, margin: '0 0 32px', textAlign: 'center' }}>
-          {cfg.sub}
-        </p>
-
-        {/* Amount */}
-        <div style={{
-          background: 'rgba(255,255,255,0.06)', borderRadius: 16, padding: '20px 32px',
-          marginBottom: 20, textAlign: 'center', border: `1px solid rgba(255,255,255,0.1)`,
-          width: '100%', maxWidth: 340, boxSizing: 'border-box',
-        }}>
-          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Amount</div>
-          <div style={{ color: '#fff', fontSize: 36, fontWeight: 800 }}>₹{Number(result.amount).toLocaleString('en-IN')}</div>
-          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 4 }}>
-            {result.from_name} → {result.to_name}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 24px 24px', maxWidth: 420, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+          {/* Icon circle */}
+          <div style={{ width: 80, height: 80, borderRadius: '50%', background: cfg.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, color: cfg.iconColor, marginBottom: 20, animation: 'pop 0.35s cubic-bezier(0.34,1.56,0.64,1)', fontWeight: 700 }}>
+            {cfg.icon}
           </div>
-        </div>
 
-        {/* Risk pill */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 28,
-          background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '8px 16px',
-          border: '1px solid rgba(255,255,255,0.08)',
-        }}>
-          <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>Risk Score</span>
-          <span style={{ color: cfg.color, fontWeight: 700, fontSize: 16 }}>{result.score}/100</span>
-          {result.case_id && (
-            <span style={{ marginLeft: 8, fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace' }}>
-              Case: {result.case_id}
-            </span>
-          )}
-        </div>
+          <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600, color: '#202124', textAlign: 'center' }}>{cfg.title}</h2>
+          <p style={{ margin: '0 0 28px', fontSize: 14, color: '#5F6368', textAlign: 'center' }}>{cfg.sub}</p>
 
-        {/* MFA instruction */}
-        {result.decision === 'mfa' && (
-          <div style={{
-            background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.3)',
-            borderRadius: 12, padding: '14px 18px', marginBottom: 24, width: '100%', maxWidth: 340, boxSizing: 'border-box',
-          }}>
-            <div style={{ color: '#93c5fd', fontWeight: 600, marginBottom: 4, fontSize: 14 }}>OTP Sent</div>
-            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13 }}>
-              A one-time password has been sent to your registered mobile number. Enter it to complete payment.
+          {/* Amount card */}
+          <div style={{ width: '100%', background: '#fff', borderRadius: 16, padding: '24px', marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.12)', textAlign: 'center' }}>
+            <div style={{ fontSize: 38, fontWeight: 700, color: '#202124', marginBottom: 6 }}>
+              ₹{Number(result.amount).toLocaleString('en-IN')}
+            </div>
+            <div style={{ fontSize: 13, color: '#5F6368' }}>
+              {result.from_name} <span style={{ color: cfg.accent }}>→</span> {result.to_name}
             </div>
           </div>
-        )}
 
-        {/* Device + location */}
-        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginBottom: 32, textAlign: 'center' }}>
-          {deviceName}{geoLoc ? ` · ${geoLoc}` : ''}
+          {/* Risk score pill */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: cfg.pillBg, borderRadius: 20, padding: '6px 14px', marginBottom: 20 }}>
+            <span style={{ fontSize: 12, color: cfg.pillText, fontWeight: 500 }}>Risk Score</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: cfg.pillText }}>{result.score}/100</span>
+            {result.case_id && <span style={{ fontSize: 11, color: cfg.pillText, opacity: 0.7 }}>· {result.case_id}</span>}
+          </div>
+
+          {/* OTP box for MFA */}
+          {result.decision === 'mfa' && (
+            <div style={{ width: '100%', background: '#E3F2FD', borderRadius: 12, padding: '14px 16px', marginBottom: 20, boxSizing: 'border-box' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1565C0', marginBottom: 4 }}>OTP Sent</div>
+              <div style={{ fontSize: 12, color: '#1565C0', opacity: 0.8 }}>Enter the OTP sent to your registered mobile number to complete this payment.</div>
+            </div>
+          )}
+
+          {/* Device & location */}
+          <div style={{ fontSize: 11, color: '#9AA0A6', textAlign: 'center', marginBottom: 32 }}>
+            📱 {deviceName}{geoLoc ? ` · 📍 ${geoLoc}` : ''}
+          </div>
+
+          <button onClick={reset} style={{ width: '100%', height: 52, borderRadius: 26, background: '#1A73E8', border: 'none', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.01em' }}>
+            New Payment
+          </button>
         </div>
 
-        <button onClick={reset} style={{
-          width: '100%', maxWidth: 340, height: 52, borderRadius: 14,
-          background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
-          color: '#fff', fontSize: 16, fontWeight: 600, cursor: 'pointer',
-        }}>
-          New Payment
-        </button>
-
-        <style>{`
-          @keyframes pop {
-            0%  { transform: scale(0.5); opacity: 0; }
-            100%{ transform: scale(1);   opacity: 1; }
-          }
-        `}</style>
+        <style>{`@keyframes pop{0%{transform:scale(0.5);opacity:0}100%{transform:scale(1);opacity:1}}`}</style>
       </div>
     );
   }
 
-  // ── Confirm screen ─────────────────────────────────────────────────────
+  // ── CONFIRM SCREEN ─────────────────────────────────────────────────────
   if (step === 'confirm') {
     return (
-      <div style={{
-        minHeight: '100dvh', background: '#0f0f14',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: 24, fontFamily: 'system-ui, -apple-system, sans-serif',
-      }}>
-        <div style={{ width: '100%', maxWidth: 380 }}>
-          <button onClick={() => setStep('form')} style={{
-            background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)',
-            fontSize: 24, cursor: 'pointer', marginBottom: 24, padding: 0,
-          }}>‹</button>
+      <div style={{ minHeight: '100dvh', background: '#F8F9FA', fontFamily: '"Google Sans", Roboto, "Helvetica Neue", sans-serif' }}>
+        {/* Header */}
+        <div style={{ background: '#fff', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #E8EAED' }}>
+          <button onClick={() => setStep('form')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#5F6368"/></svg>
+          </button>
+          <GPLogo size={22} />
+          <span style={{ fontWeight: 600, fontSize: 17, color: '#202124' }}>Confirm Payment</span>
+        </div>
 
-          <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>Confirm Payment</h2>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, margin: '0 0 28px' }}>Review details before sending</p>
-
-          <div style={{
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 16, padding: '20px', marginBottom: 20,
-          }}>
+        <div style={{ padding: '20px', maxWidth: 420, margin: '0 auto' }}>
+          {/* Recipient card */}
+          <div style={{ background: '#fff', borderRadius: 16, padding: '20px', marginBottom: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
               <Avatar name={toAccount?.name ?? ''} size={52} />
               <div>
-                <div style={{ color: '#fff', fontWeight: 600, fontSize: 16 }}>{toAccount?.name}</div>
-                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                  {toAccount?.upi_id || toAccount?.id} · {toAccount?.city}
-                </div>
+                <div style={{ fontWeight: 600, fontSize: 16, color: '#202124' }}>{toAccount?.name}</div>
+                <div style={{ fontSize: 12, color: '#5F6368', marginTop: 2 }}>{toAccount?.upi_id || toAccount?.id} · {toAccount?.city}</div>
               </div>
             </div>
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16, textAlign: 'center' }}>
-              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginBottom: 4 }}>AMOUNT</div>
-              <div style={{ color: '#fff', fontSize: 40, fontWeight: 800 }}>₹{Number(amount).toLocaleString('en-IN')}</div>
-            </div>
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 14, marginTop: 14 }}>
-              {[
-                ['From', fromAccount?.name ?? fromId],
-                ['Via', txnType],
-                ['Device', deviceName],
-              ].map(([k, v]) => (
-                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>{k}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>{v}</span>
-                </div>
-              ))}
-              {geoLoc && (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>Location</span>
-                  <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>{geoLoc}</span>
-                </div>
-              )}
+            <div style={{ textAlign: 'center', borderTop: '1px solid #E8EAED', paddingTop: 18 }}>
+              <div style={{ fontSize: 11, color: '#9AA0A6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Amount</div>
+              <div style={{ fontSize: 42, fontWeight: 700, color: '#202124' }}>₹{Number(amount).toLocaleString('en-IN')}</div>
             </div>
           </div>
 
+          {/* Details card */}
+          <div style={{ background: '#fff', borderRadius: 16, padding: '16px 20px', marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            {[
+              ['From', fromAccount?.name ?? fromId],
+              ['Payment via', txnType],
+              ['Device', deviceName],
+              ...(geoLoc ? [['Location', geoLoc]] : []),
+            ].map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #F1F3F4' }}>
+                <span style={{ fontSize: 13, color: '#5F6368' }}>{k}</span>
+                <span style={{ fontSize: 13, color: '#202124', fontWeight: 500, maxWidth: '60%', textAlign: 'right' }}>{v}</span>
+              </div>
+            ))}
+          </div>
+
           {error && (
-            <div style={{
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 10, padding: '10px 14px', marginBottom: 16,
-              color: '#fca5a5', fontSize: 13,
-            }}>{error}</div>
+            <div style={{ background: '#FFEBEE', border: '1px solid #EF9A9A', borderRadius: 10, padding: '10px 14px', marginBottom: 16, color: '#C62828', fontSize: 13 }}>{error}</div>
           )}
 
+          {/* Google Pay-style security note */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, padding: '0 4px' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#34A853"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+            <span style={{ fontSize: 12, color: '#5F6368' }}>AI fraud check runs in &lt;100ms before processing</span>
+          </div>
+
           <button onClick={handlePay} disabled={loading} style={{
-            width: '100%', height: 56, borderRadius: 14,
-            background: loading ? 'rgba(74,222,128,0.4)' : 'linear-gradient(135deg,#16a34a,#15803d)',
-            border: 'none', color: '#fff', fontSize: 17, fontWeight: 700,
+            width: '100%', height: 54, borderRadius: 27,
+            background: loading ? '#9AA0A6' : '#1A73E8',
+            border: 'none', color: '#fff', fontSize: 16, fontWeight: 600,
             cursor: loading ? 'not-allowed' : 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           }}>
             {loading ? (
-              <>
-                <span style={{ display: 'inline-block', width: 18, height: 18, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                Processing...
-              </>
-            ) : (
-              <>Pay ₹{Number(amount).toLocaleString('en-IN')}</>
-            )}
+              <><span style={{ display: 'inline-block', width: 18, height: 18, border: '2px solid rgba(255,255,255,0.5)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Verifying...</>
+            ) : `Pay ₹${Number(amount).toLocaleString('en-IN')}`}
           </button>
         </div>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -390,225 +325,167 @@ export default function GPayPage() {
     );
   }
 
-  // ── Form screen ────────────────────────────────────────────────────────
+  // ── FORM SCREEN ────────────────────────────────────────────────────────
   const canProceed = fromId && toId && fromId !== toId && parseFloat(amount) > 0;
 
   return (
-    <div style={{
-      minHeight: '100dvh', background: '#0f0f14',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      padding: '0 0 40px',
-    }}>
-      {/* Header */}
-      <div style={{
-        background: 'linear-gradient(180deg, #1a1a2e 0%, #0f0f14 100%)',
-        padding: '20px 20px 16px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: 'linear-gradient(135deg, #4ade80, #3b82f6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18,
-          }}>₹</div>
-          <div>
-            <div style={{ color: '#fff', fontWeight: 700, fontSize: 18, lineHeight: 1.2 }}>ChakraPay</div>
-            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11 }}>Real-time fraud protection active</div>
+    <div style={{ minHeight: '100dvh', background: '#F8F9FA', fontFamily: '"Google Sans", Roboto, "Helvetica Neue", sans-serif', paddingBottom: 40 }}>
+
+      {/* Google Pay Header */}
+      <div style={{ background: '#fff', padding: '16px 20px 14px', borderBottom: '1px solid #E8EAED' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 420, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <GPLogo size={26} />
+            <span style={{ fontSize: 18, fontWeight: 600, color: '#202124', letterSpacing: '-0.3px' }}>Pay</span>
           </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', display: 'inline-block', animation: 'pulse 1.5s ease-in-out infinite' }} />
-            <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600 }}>LIVE</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#E8F5E9', borderRadius: 12, padding: '4px 10px' }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#34A853', display: 'inline-block', animation: 'gpulse 1.8s ease-in-out infinite' }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#2E7D32' }}>Fraud Protection ON</span>
           </div>
         </div>
       </div>
 
-      <div style={{ padding: '20px 20px 0' }}>
+      <div style={{ padding: '20px', maxWidth: 420, margin: '0 auto' }}>
 
-        {/* Sender */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-            Paying from
-          </div>
-          <div style={{
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 12, overflow: 'hidden',
-          }}>
-            <select
-              value={fromId}
-              onChange={e => setFromId(e.target.value)}
-              style={{
-                width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                color: '#fff', fontSize: 15, padding: '14px 16px', cursor: 'pointer',
-              }}
-            >
-              {accounts.map(a => (
-                <option key={a.id} value={a.id} style={{ background: '#1a1a2e', color: '#fff' }}>
-                  {a.name} ({a.id})
-                </option>
-              ))}
-            </select>
-          </div>
-          {fromAccount && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, paddingLeft: 4 }}>
-              <Avatar name={fromAccount.name} size={28} />
-              <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>
-                {fromAccount.city} · {fromAccount.account_type.replace('_', ' ')} · {fromAccount.risk_rating.toUpperCase()} risk
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Pay to card */}
+        <div style={{ background: '#fff', borderRadius: 16, padding: '18px', marginBottom: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#9AA0A6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Pay to</div>
 
-        {/* Arrow divider */}
-        <div style={{ textAlign: 'center', margin: '4px 0 12px', color: 'rgba(255,255,255,0.2)', fontSize: 22 }}>↓</div>
-
-        {/* Receiver */}
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-            Paying to
-          </div>
-          <div style={{
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 12, overflow: 'hidden',
-          }}>
-            <select
-              value={toId}
-              onChange={e => setToId(e.target.value)}
-              style={{
-                width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                color: '#fff', fontSize: 15, padding: '14px 16px', cursor: 'pointer',
-              }}
-            >
+          <div style={{ position: 'relative' }}>
+            <select value={toId} onChange={e => setToId(e.target.value)} style={{
+              width: '100%', background: '#F8F9FA', border: '1.5px solid #E8EAED', borderRadius: 12,
+              outline: 'none', color: '#202124', fontSize: 15, padding: '13px 16px', cursor: 'pointer',
+              appearance: 'none', WebkitAppearance: 'none',
+            }}>
               {accounts.filter(a => a.id !== fromId).map(a => (
-                <option key={a.id} value={a.id} style={{ background: '#1a1a2e', color: '#fff' }}>
-                  {a.name} ({a.id})
-                </option>
+                <option key={a.id} value={a.id}>{a.name} ({a.id})</option>
               ))}
             </select>
+            <svg style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5H7z" fill="#5F6368"/></svg>
           </div>
+
           {toAccount && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, paddingLeft: 4 }}>
-              <Avatar name={toAccount.name} size={28} />
-              <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12 }}>
-                {toAccount.city} · {toAccount.account_type.replace('_', ' ')}
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, padding: '10px 12px', background: '#F8F9FA', borderRadius: 10 }}>
+              <Avatar name={toAccount.name} size={36} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#202124' }}>{toAccount.name}</div>
+                <div style={{ fontSize: 11, color: '#5F6368' }}>{toAccount.upi_id || toAccount.id} · {toAccount.city}</div>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Amount */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-            Amount
-          </div>
-          <div style={{
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 12, display: 'flex', alignItems: 'center', padding: '0 16px',
-          }}>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 20, marginRight: 8 }}>₹</span>
+        {/* Amount card */}
+        <div style={{ background: '#fff', borderRadius: 16, padding: '18px', marginBottom: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#9AA0A6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Amount</div>
+          <div style={{ display: 'flex', alignItems: 'center', background: '#F8F9FA', borderRadius: 12, border: '1.5px solid #E8EAED', padding: '0 16px' }}>
+            <span style={{ color: '#5F6368', fontSize: 22, fontWeight: 400, marginRight: 4 }}>₹</span>
             <input
               ref={amtRef}
               type="number"
-              inputMode="numeric"
+              inputMode="decimal"
               value={amount}
               onChange={e => setAmount(e.target.value)}
               placeholder="0"
-              style={{
-                flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                color: '#fff', fontSize: 28, fontWeight: 700, padding: '14px 0',
-              }}
+              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#202124', fontSize: 32, fontWeight: 700, padding: '12px 0' }}
             />
           </div>
-
-          {/* Quick chips */}
           <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
             {[500, 1000, 5000, 10000, 50000].map(v => (
-              <Chip key={v} val={v} active={amount === String(v)} onClick={() => setAmount(String(v))} />
+              <button key={v} onClick={() => setAmount(String(v))} style={{
+                padding: '5px 13px', borderRadius: 16,
+                border: `1.5px solid ${amount === String(v) ? '#1A73E8' : '#E8EAED'}`,
+                background: amount === String(v) ? '#E8F0FE' : '#fff',
+                color: amount === String(v) ? '#1A73E8' : '#5F6368',
+                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              }}>
+                ₹{v >= 1000 ? `${v / 1000}K` : v}
+              </button>
             ))}
           </div>
         </div>
 
-        {/* Txn type */}
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-            Payment method
+        {/* Pay from + method card */}
+        <div style={{ background: '#fff', borderRadius: 16, padding: '18px', marginBottom: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#9AA0A6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Pay from</div>
+          <div style={{ position: 'relative', marginBottom: 14 }}>
+            <select value={fromId} onChange={e => setFromId(e.target.value)} style={{
+              width: '100%', background: '#F8F9FA', border: '1.5px solid #E8EAED', borderRadius: 12,
+              outline: 'none', color: '#202124', fontSize: 14, padding: '11px 16px', cursor: 'pointer',
+              appearance: 'none', WebkitAppearance: 'none',
+            }}>
+              {accounts.map(a => (
+                <option key={a.id} value={a.id}>{a.name} — {a.account_type.replace('_', ' ')} ({a.city})</option>
+              ))}
+            </select>
+            <svg style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5H7z" fill="#5F6368"/></svg>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+
+          {/* Payment method tabs */}
+          <div style={{ display: 'flex', gap: 6 }}>
             {['UPI', 'IMPS', 'NEFT', 'RTGS'].map(t => (
               <button key={t} onClick={() => setTxnType(t)} style={{
-                flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 600,
-                cursor: 'pointer', border: `1px solid ${txnType === t ? 'rgba(74,222,128,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                background: txnType === t ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.03)',
-                color: txnType === t ? '#4ade80' : 'rgba(255,255,255,0.5)',
+                flex: 1, padding: '8px 0', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                cursor: 'pointer',
+                border: `1.5px solid ${txnType === t ? '#1A73E8' : '#E8EAED'}`,
+                background: txnType === t ? '#E8F0FE' : '#fff',
+                color: txnType === t ? '#1A73E8' : '#5F6368',
               }}>{t}</button>
             ))}
           </div>
         </div>
 
-        {/* Location request */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 12, padding: '12px 16px', marginBottom: 20,
-        }}>
-          <div>
-            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 500 }}>
-              📍 Location for fraud check
+        {/* Location + Device row */}
+        <div style={{ background: '#fff', borderRadius: 16, padding: '14px 18px', marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#202124' }}>📍 Location for fraud check</div>
+              <div style={{ fontSize: 11, color: '#9AA0A6', marginTop: 2 }}>{geoLoc || 'Not captured yet'}</div>
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 2 }}>
-              {geoLoc || 'Not captured yet'}
-            </div>
+            <button onClick={requestGeo} disabled={geoLoading} style={{
+              background: '#E8F0FE', border: 'none', borderRadius: 8,
+              padding: '7px 14px', color: '#1A73E8', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            }}>
+              {geoLoading ? '...' : geoLoc ? 'Refresh' : 'Allow'}
+            </button>
           </div>
-          <button onClick={requestGeo} disabled={geoLoading} style={{
-            background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
-            borderRadius: 8, padding: '6px 12px', color: '#4ade80', fontSize: 12,
-            fontWeight: 600, cursor: 'pointer',
-          }}>
-            {geoLoading ? '...' : geoLoc ? 'Re-capture' : 'Allow'}
-          </button>
-        </div>
-
-        {/* Device info */}
-        <div style={{
-          color: 'rgba(255,255,255,0.25)', fontSize: 11, textAlign: 'center', marginBottom: 20,
-        }}>
-          Device: {deviceName}
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #F1F3F4', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 14 }}>📱</span>
+            <span style={{ fontSize: 12, color: '#5F6368' }}>{deviceName}</span>
+          </div>
         </div>
 
         {error && (
-          <div style={{
-            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-            borderRadius: 10, padding: '10px 14px', marginBottom: 16, color: '#fca5a5', fontSize: 13,
-          }}>{error}</div>
+          <div style={{ background: '#FFEBEE', border: '1px solid #EF9A9A', borderRadius: 10, padding: '10px 14px', marginBottom: 16, color: '#C62828', fontSize: 13 }}>{error}</div>
         )}
 
-        {/* Pay button */}
+        {/* Main pay button */}
         <button
           disabled={!canProceed}
           onClick={() => { setError(''); setStep('confirm'); }}
           style={{
-            width: '100%', height: 56, borderRadius: 14,
-            background: canProceed
-              ? 'linear-gradient(135deg,#16a34a,#15803d)'
-              : 'rgba(255,255,255,0.06)',
-            border: 'none', color: canProceed ? '#fff' : 'rgba(255,255,255,0.2)',
-            fontSize: 17, fontWeight: 700, cursor: canProceed ? 'pointer' : 'not-allowed',
+            width: '100%', height: 54, borderRadius: 27,
+            background: canProceed ? '#1A73E8' : '#E8EAED',
+            border: 'none', color: canProceed ? '#fff' : '#9AA0A6',
+            fontSize: 16, fontWeight: 600, cursor: canProceed ? 'pointer' : 'not-allowed',
+            letterSpacing: '0.01em',
           }}
         >
-          {canProceed ? `Pay ₹${Number(amount).toLocaleString('en-IN')} →` : 'Enter payment details'}
+          {canProceed ? `Pay ₹${Number(amount).toLocaleString('en-IN')}` : 'Enter payment details'}
         </button>
 
-        {/* Fraud shield note */}
-        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: 11, marginTop: 16 }}>
-          🛡️ AI fraud check runs in &lt;100ms before this payment processes
+        <p style={{ textAlign: 'center', color: '#9AA0A6', fontSize: 11, marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="#34A853"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+          AI fraud check runs in &lt;100ms before this payment processes
         </p>
       </div>
 
       <style>{`
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        select option { background: #1a1a2e; }
+        @keyframes gpulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+        select option { background: #fff; color: #202124; }
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+        * { box-sizing: border-box; }
       `}</style>
     </div>
   );
