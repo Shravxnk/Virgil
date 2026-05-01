@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o"
 
-    # PostgreSQL
+    # PostgreSQL — either set DATABASE_URL (takes priority) or individual DB_* vars
+    database_url: str = ""  # e.g. postgresql://user:pass@host/dbname
     db_host: str = "localhost"
     db_port: int = 5432
     db_name: str = "postgres"

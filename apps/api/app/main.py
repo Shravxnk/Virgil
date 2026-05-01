@@ -117,7 +117,11 @@ async def lifespan(app: FastAPI):
     # ② PostgreSQL (optional — failures do not affect runtime store)
     try:
         from app.db.connection import init_db
-        await init_db(settings.db_host, settings.db_port, settings.db_name, settings.db_user, settings.db_password)
+        await init_db(
+            settings.db_host, settings.db_port, settings.db_name,
+            settings.db_user, settings.db_password,
+            database_url=settings.database_url,
+        )
         await _seed_pg_sample_data()
     except Exception as e:
         print(f"[Chakravyuh] PostgreSQL init skipped: {e}")
