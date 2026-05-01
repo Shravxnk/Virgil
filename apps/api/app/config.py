@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     api_port: int = 8000
     frontend_url: str = "http://localhost:3000"
 
-    data_dir: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "..", "data")
+    data_dir: str = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "..", "data"))
 
     class Config:
         env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), ".env")

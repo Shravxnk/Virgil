@@ -4,13 +4,13 @@
 # HOW TO DEPLOY:
 #   1. Push this repo to GitHub/GitLab
 #   2. In Render dashboard → New → Blueprint → connect your repo
-#   3. After deploy, set secrets marked `sync: false` in Render dashboard:
+#   3. After BOTH services deploy, set secrets marked `sync: false`:
 #      chakravyuh-api → Environment:
 #        OPENAI_API_KEY  → your OpenAI key
-#        DATABASE_URL    → full postgres connection string
+#        DATABASE_URL    → your Render PostgreSQL connection string
 #      chakravyuh-web → Environment:
-#        NEXT_PUBLIC_API_URL → https://<your-api-service-name>.onrender.com
-#          (find the exact URL in Render dashboard → chakravyuh-api → Settings → URL)
+#        NEXT_PUBLIC_API_URL → exact URL from chakravyuh-api → Settings → URL
+#                              e.g. https://chakravyuh-api-xxxx.onrender.com
 
 services:
 
@@ -18,9 +18,10 @@ services:
   - type: web
     name: chakravyuh-api
     runtime: python
+    rootDir: apps/api
     plan: free
-    buildCommand: pip install -r apps/api/requirements.txt
-    startCommand: cd apps/api && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: PYTHON_ENV
@@ -33,18 +34,22 @@ services:
         sync: false
       - key: API_HOST
         value: "0.0.0.0"
+      - key: PYTHONUNBUFFERED
+        value: "1"
 
   # ── Frontend: Next.js (native Node) ────────────────────────────────────────
   - type: web
     name: chakravyuh-web
     runtime: node
+    rootDir: apps/web
     plan: free
-    buildCommand: cd apps/web && npm ci && npm run build
-    startCommand: cd apps/web && npm start
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-      # IMPORTANT: Set this in Render dashboard → chakravyuh-web → Environment
-      # Value: https://<your-api-url>.onrender.com  (get from chakravyuh-api → Settings)
+      # IMPORTANT: After chakravyuh-api deploys, copy its URL from
+      # Render dashboard → chakravyuh-api → Settings → URL
+      # and paste it here: chakravyuh-web → Environment → NEXT_PUBLIC_API_URL
       - key: NEXT_PUBLIC_API_URL
         sync: false
