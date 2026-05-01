@@ -7,4 +7,5 @@ ignore = [
     "E501",  # line too long — handled by formatter, not enforced in CI
     "I001",  # import sort — not required in this project
     "E701",  # multiple statements on one line — used intentionally in some helpers
+    "F401",  # unused import — managed manually, not enforced in CI
 ]
