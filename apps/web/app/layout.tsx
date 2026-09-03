@@ -17,7 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Chakravyuh — Real-Time Banking Fraud Intelligence',
+  title: 'Virgil — Real-Time Banking Fraud Intelligence',
   description:
     'Multi-layered AI fraud detection and investigation platform for India\'s banking institutions.',
 };

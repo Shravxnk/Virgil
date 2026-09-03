@@ -1,7 +1,7 @@
 [project]
-name = "chakravyuh-api"
+name = "virgil-api"
 version = "1.0.0"
-description = "Chakravyuh — AI-Powered Fraud Intelligence API"
+description = "Virgil — AI-Powered Fraud Intelligence API"
 requires-python = ">=3.11"
 
 [tool.pytest.ini_options]

@@ -1,4 +1,4 @@
-"""Chakravyuh API — AI-Powered Fraud Intelligence System."""
+"""Virgil API — AI-Powered Fraud Intelligence System."""
 
 import logging
 import os
@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.responses import JSONResponse  # noqa: E402
 
-from app.api.routes import alerts, cases, compliance, dashboard, feedback, graph, reports, risk, scenarios, transactions  # noqa: E402
+from app.api.routes import alerts, cases, compliance, dashboard, feedback, graph, risk, scenarios, transactions  # noqa: E402
 from app.api.routes import accounts as accounts_router  # noqa: E402
 from app.api.routes import events as events_router  # noqa: E402
 from app.api.routes import admin as admin_router  # noqa: E402
@@ -44,7 +44,7 @@ async def _seed_pg_sample_data() -> None:
         store_case(c)
 
     if not connection.PG_AVAILABLE:
-        print(f"[Chakravyuh] PG unavailable — seeded {len(alerts)} alerts, {len(cases)} cases into runtime store.")
+        print(f"[Virgil] PG unavailable — seeded {len(alerts)} alerts, {len(cases)} cases into runtime store.")
         return
 
     pool = connection.get_pool()
@@ -92,9 +92,9 @@ async def _seed_pg_sample_data() -> None:
                     p.get("state"),
                     json.dumps(profile_blob),
                 )
-            print(f"[Chakravyuh] Seeded {len(profiles)} accounts into PostgreSQL.")
+            print(f"[Virgil] Seeded {len(profiles)} accounts into PostgreSQL.")
         else:
-            print(f"[Chakravyuh] PG already has {account_count} accounts.")
+            print(f"[Virgil] PG already has {account_count} accounts.")
 
         if alert_count == 0:
             for a in alerts:
@@ -102,7 +102,7 @@ async def _seed_pg_sample_data() -> None:
                     "INSERT INTO alerts (id, data) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING",
                     a["id"], json.dumps(a),
                 )
-            print(f"[Chakravyuh] Seeded {len(alerts)} alerts into PostgreSQL.")
+            print(f"[Virgil] Seeded {len(alerts)} alerts into PostgreSQL.")
 
         if case_count == 0:
             for c in cases:
@@ -110,7 +110,7 @@ async def _seed_pg_sample_data() -> None:
                     "INSERT INTO cases (id, data) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING",
                     c["id"], json.dumps(c),
                 )
-            print(f"[Chakravyuh] Seeded {len(cases)} cases into PostgreSQL.")
+            print(f"[Virgil] Seeded {len(cases)} cases into PostgreSQL.")
 
         if txn_count == 0:
             for t in txns:
@@ -141,10 +141,10 @@ async def _seed_pg_sample_data() -> None:
                     json.dumps(t.get("post_analysis") or {}),
                     ts_val,
                 )
-            print(f"[Chakravyuh] Seeded {len(txns)} transactions into PostgreSQL.")
+            print(f"[Virgil] Seeded {len(txns)} transactions into PostgreSQL.")
 
         if alert_count > 0 or case_count > 0 or txn_count > 0:
-            print(f"[Chakravyuh] PG already has data: {alert_count} alerts, {case_count} cases, {txn_count} txns. Runtime store topped up.")
+            print(f"[Virgil] PG already has data: {alert_count} alerts, {case_count} cases, {txn_count} txns. Runtime store topped up.")
 
 
 @asynccontextmanager
@@ -164,9 +164,9 @@ async def lifespan(app: FastAPI):
             store_transaction(_t)
         for _p in _seed.get("profiles", []):
             store_profile(_p)
-        print(f"[Chakravyuh] Runtime store seeded: {len(_seed['alerts'])} alerts, {len(_seed['cases'])} cases, {len(_seed['transactions'])} txns, {len(_seed.get('profiles', []))} profiles.")
+        print(f"[Virgil] Runtime store seeded: {len(_seed['alerts'])} alerts, {len(_seed['cases'])} cases, {len(_seed['transactions'])} txns, {len(_seed.get('profiles', []))} profiles.")
     except Exception as _e:
-        print(f"[Chakravyuh] Runtime store seeding failed: {_e}")
+        print(f"[Virgil] Runtime store seeding failed: {_e}")
     # ② PostgreSQL (optional — failures do not affect runtime store)
     try:
         from app.db.connection import init_db
@@ -177,7 +177,7 @@ async def lifespan(app: FastAPI):
         )
         await _seed_pg_sample_data()
     except Exception as e:
-        print(f"[Chakravyuh] PostgreSQL init skipped: {e}")
+        print(f"[Virgil] PostgreSQL init skipped: {e}")
     # Clear JSON cache so data files are always read fresh after startup
     try:
         from app.core.data_loader import clear_all_caches
@@ -190,9 +190,9 @@ async def lifespan(app: FastAPI):
         try:
             from app.retrieval.vector_store import seed_all_collections
             seed_all_collections()
-            print("[Chakravyuh] Vector store seeding complete.")
+            print("[Virgil] Vector store seeding complete.")
         except Exception as e:
-            print(f"[Chakravyuh] Vector store seeding skipped: {e}")
+            print(f"[Virgil] Vector store seeding skipped: {e}")
     t = threading.Thread(target=_seed_bg, daemon=True)
     t.start()
     yield
@@ -201,7 +201,7 @@ async def lifespan(app: FastAPI):
 settings = get_settings()
 
 app = FastAPI(
-    title="Chakravyuh API",
+    title="Virgil API",
     description="AI-Powered Fraud Intelligence System for Banking",
     version=settings.app_version,
     lifespan=lifespan,
@@ -230,7 +230,6 @@ app.include_router(risk.router, prefix="/api")
 app.include_router(alerts.router, prefix="/api")
 app.include_router(cases.router, prefix="/api")
 app.include_router(graph.router, prefix="/api")
-app.include_router(reports.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(feedback.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")
@@ -245,7 +244,7 @@ app.include_router(admin_router.router, prefix="/api")
 async def health_check():
     return {
         "status": "healthy",
-        "service": "chakravyuh-api",
+        "service": "virgil-api",
         "version": settings.app_version,
     }
 
@@ -286,7 +285,7 @@ async def debug_info():
 @app.get("/api")
 async def api_root():
     return {
-        "service": "Chakravyuh Fraud Intelligence API",
+        "service": "Virgil Fraud Intelligence API",
         "version": settings.app_version,
         "endpoints": {
             "risk_scoring": "/api/risk/score?transaction_id={id}",

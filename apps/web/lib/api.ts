@@ -10,7 +10,7 @@ import type {
 } from '@/types';
 
 // In production (Render): NEXT_PUBLIC_API_URL is set in the Render dashboard
-// to the full API URL e.g. https://chakravyuh-api-fdlt.onrender.com
+// to the full API URL e.g. https://your-api-host.example.com
 // In local dev: set NEXT_PUBLIC_API_URL=http://localhost:8000 in .env.local
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 

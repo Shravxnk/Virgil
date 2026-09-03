@@ -44,7 +44,7 @@ const config: Config = {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',
         },
-        // Chakravyuh design tokens
+        // Design tokens
         'bg-void':     '#060A14',
         'bg-base':     '#0C1220',
         'bg-surface':  '#111827',

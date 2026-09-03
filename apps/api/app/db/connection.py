@@ -26,7 +26,7 @@ async def init_db(host: str, port: int, database: str, user: str, password: str,
     elif password:
         dsn = None  # use keyword args below
     else:
-        logger.info("[Chakravyuh] No DB credentials set — running in in-memory mock mode.")
+        logger.info("[Virgil] No DB credentials set — running in in-memory mock mode.")
         return
 
     try:
@@ -57,9 +57,9 @@ async def init_db(host: str, port: int, database: str, user: str, password: str,
         async with _pool.acquire() as conn:
             await conn.execute(ddl)
         PG_AVAILABLE = True
-        logger.info("[Chakravyuh] PostgreSQL connected — %s:%s/%s", host, port, database)
+        logger.info("[Virgil] PostgreSQL connected — %s:%s/%s", host, port, database)
     except Exception as exc:
-        logger.warning("[Chakravyuh] PostgreSQL init failed (%s) — using mock data.", exc)
+        logger.warning("[Virgil] PostgreSQL init failed (%s) — using mock data.", exc)
 
 
 def get_pool():

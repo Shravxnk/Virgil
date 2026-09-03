@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    app_name: str = "Chakravyuh API"
+    app_name: str = "Virgil API"
     app_version: str = "1.1.0"
     debug: bool = False
 
