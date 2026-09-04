@@ -64,7 +64,7 @@ export function Sidebar({ role: _role }: { role?: 'analyst' | 'executive' }) {
         <ShieldIcon />
         <div>
           <h1 className="text-sm font-bold tracking-tight text-white" style={{ letterSpacing: '-0.01em' }}>
-            Chakravyuh
+            Virgil
           </h1>
           <p className="text-[9px] tracking-widest uppercase" style={{ color: '#6B8FBF', marginTop: 1 }}>
             Fraud Intelligence

@@ -1,5 +1,5 @@
 # ==============================================================================
-# CHAKRAVYUH — Complete Requirements
+# VIRGIL — Complete Requirements
 # ==============================================================================
 #
 # Python: 3.11 or 3.12
@@ -82,7 +82,7 @@ pytest-asyncio==0.23.5
 #
 # DB_HOST=localhost
 # DB_PORT=5432
-# DB_NAME=chakravyuh
+# DB_NAME=virgil
 # DB_USER=postgres
 # DB_PASSWORD=yourpassword
 #

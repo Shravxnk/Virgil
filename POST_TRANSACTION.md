@@ -1,4 +1,4 @@
-# 🔍 Chakravyuh — Post-Transaction Detection: Full Walkthrough
+# 🔍 Virgil — Post-Transaction Detection: Full Walkthrough
 
 > The money has already moved. Here is exactly what happens next — step by step.
 > For comparison, see `EXPLAINED.md` Section 4 for the pre-transaction walkthrough.
@@ -376,4 +376,4 @@ Transaction completes
 
 ---
 
-*Chakravyuh v1.1 — Post-transaction engine: `apps/api/app/services/risk_scoring.py`, `graph/`, `llm/explainer.py`, `utils/pdf_generator.py`*
+*Virgil v1.1 — Post-transaction engine: `apps/api/app/services/risk_scoring.py`, `graph/`, `llm/explainer.py`, `utils/pdf_generator.py`*

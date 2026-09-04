@@ -1,4 +1,4 @@
--- Chakravyuh PostgreSQL schema
+-- Virgil PostgreSQL schema
 -- Run once to initialise. All statements are idempotent (IF NOT EXISTS).
 
 -- Accounts with per-account behavioural baseline for anomaly scoring

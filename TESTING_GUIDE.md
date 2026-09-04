@@ -1,6 +1,6 @@
-# Chakravyuh Testing Guide
+# Virgil Testing Guide
 
-Comprehensive guide for testing Chakravyuh's fraud detection system with pre-transaction and post-transaction analysis.
+Comprehensive guide for testing Virgil's fraud detection system with pre-transaction and post-transaction analysis.
 
 ---
 
@@ -32,7 +32,7 @@ python scripts/seed_db.py
 
 1. **Open GPay Interface**
    ```
-   https://chakravyuh-web-xxxx.onrender.com/gpay
+   https://virgil-web-xxxx.onrender.com/gpay
    ```
    (On actual mobile device or desktop with mobile emulation)
 
@@ -54,7 +54,7 @@ python scripts/seed_db.py
    - Click "Pay ₹500,000" to score
 
 5. **Verify on Dashboard**
-   - Open: `https://chakravyuh-web-xxxx.onrender.com/analyst/pre-txn-analytics`
+   - Open: `https://virgil-web-xxxx.onrender.com/analyst/pre-txn-analytics`
    - **Expected**: Transaction appears with:
      - `📱 iPhone (iOS 17.4)` or your actual device
      - `📍 12.9716,77.5946` (sample coordinates)
@@ -98,7 +98,7 @@ python scripts/seed_db.py
 #### Steps:
 
 1. **Monitor Dashboard** for POST-transactions:
-   - Open: `https://chakravyuh-web-xxxx.onrender.com/analyst`
+   - Open: `https://virgil-web-xxxx.onrender.com/analyst`
    - Pre-seeded ~12 circular transactions exist in DB
 
 2. **Expected Findings**

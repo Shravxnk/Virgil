@@ -1,4 +1,4 @@
-# Chakravyuh - AI Fraud Detection System
+# Virgil - AI Fraud Detection System
 
 **A real-time fraud detection platform for pre-transaction and post-transaction analysis, featuring ML scoring, biometric authentication, device fingerprinting, and advanced AML/CFT pattern detection.**
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-Chakravyuh is a comprehensive fraud detection system designed to catch suspicious financial transactions in real-time. It combines:
+Virgil is a comprehensive fraud detection system designed to catch suspicious financial transactions in real-time. It combines:
 
 - **Pre-transaction scoring** (< 100ms) before funds move
 - **Real-time device detection** (iPhone, Pixel 7, exact device models)
@@ -95,7 +95,7 @@ Chakravyuh is a comprehensive fraud detection system designed to catch suspiciou
 ## Project Structure
 
 ```
-chakravyuh/
+virgil/
 ├── apps/
 │   ├── api/                          # FastAPI backend
 │   │   ├── app/
@@ -215,7 +215,7 @@ chakravyuh/
 ```bash
 # Clone repo
 git clone <repo-url>
-cd chakravyuh
+cd virgil
 
 # Python backend
 cd apps/api
@@ -245,7 +245,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
 
 **Backend** (`apps/api/.env`):
 ```
-DATABASE_URL=postgresql://user:pass@localhost/chakravyuh
+DATABASE_URL=postgresql://user:pass@localhost/virgil
 OPENAI_API_KEY=sk-... (optional, for LLM explanations)
 ```
 
@@ -265,8 +265,8 @@ git commit -m "Deploy to Render"
 git push origin main
 
 # Render auto-detects render.yaml and deploys:
-# - Backend: https://chakravyuh-api-fdlt.onrender.com
-# - Frontend: https://chakravyuh-web-xxxx.onrender.com
+# - Backend: https://virgil-api-fdlt.onrender.com
+# - Frontend: https://virgil-web-xxxx.onrender.com
 ```
 
 #### Manual Steps
@@ -326,7 +326,7 @@ A realistic Google Pay interface for testing pre-transaction scoring.
 
 **Access:**
 ```
-https://chakravyuh-web-xxxx.onrender.com/gpay
+https://virgil-web-xxxx.onrender.com/gpay
 ```
 
 ### 3. Biometric MFA (Fingerprint/Face)
@@ -363,7 +363,7 @@ Step-up authentication for medium-risk transactions.
 
 **Access:**
 ```
-https://chakravyuh-web-xxxx.onrender.com/analyst/pre-txn-analytics
+https://virgil-web-xxxx.onrender.com/analyst/pre-txn-analytics
 ```
 
 ### 5. Account Bifurcation (40 Test Accounts)
@@ -661,7 +661,7 @@ pytest tests/  # All tests pass (36/36)
 ```yaml
 services:
   - type: web
-    name: chakravyuh-api
+    name: virgil-api
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
@@ -670,13 +670,13 @@ services:
         value: postgresql://…
   
   - type: web
-    name: chakravyuh-web
+    name: virgil-web
     runtime: node
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://chakravyuh-api-xxxx.onrender.com
+        value: https://virgil-api-xxxx.onrender.com
 ```
 
 **Deploy:**
@@ -1157,17 +1157,17 @@ Checks that non-existent transaction IDs produce an empty graph (0 nodes, 0 edge
 
 ---
 
-## 🎯 What Is Chakravyuh?
+## 🎯 What Is Virgil?
 
-Chakravyuh (चक्रव्यूह — "the inescapable formation") is a full-stack AI-powered fraud detection system built for Indian banks. It watches every bank transaction in real time, decides whether to allow or block it **before the money moves**, and if something looks fraudulent it automatically opens an investigation case, writes an AI-generated briefing, maps out the fund flow, and generates a regulatory report.
+Virgil (चक्रव्यूह — "the inescapable formation") is a full-stack AI-powered fraud detection system built for Indian banks. It watches every bank transaction in real time, decides whether to allow or block it **before the money moves**, and if something looks fraudulent it automatically opens an investigation case, writes an AI-generated briefing, maps out the fund flow, and generates a regulatory report.
 
-In simple words: when someone clicks "Send Money" in their banking app, Chakravyuh checks the transaction in milliseconds and decides:
+In simple words: when someone clicks "Send Money" in their banking app, Virgil checks the transaction in milliseconds and decides:
 
 ```
 Customer clicks "Pay ₹2,50,000"
         │
         ▼
-  Chakravyuh checks: Is this risky?
+  Virgil checks: Is this risky?
   [score = 84 → BLOCK]
         │
         ▼
@@ -1189,7 +1189,7 @@ If the score is low the payment goes through normally and the customer never eve
 
 Design a system that can detect and prevent financial fraud before transactions are completed. The system should identify coordinated, stealthy, and evolving fraud patterns across users and channels. It must analyze behavior, transaction context, and device intelligence to detect anomalies with real-time decision-making and minimal latency.
 
-### How Chakravyuh Maps to Every Requirement
+### How Virgil Maps to Every Requirement
 
 | Requirement | How We Solve It |
 |---|---|
@@ -1574,7 +1574,7 @@ STAGE 1: ATO signals          STAGE 2: Exploitation signals
   ├── Unusual location          ├── New beneficiary
   └── Unusual hour              └── Transfer to mule account
 
-STAGE 3: Chakravyuh connects the chain
+STAGE 3: Virgil connects the chain
   Device mismatch + Amount deviation + New beneficiary
   = combined score triggers MFA or block
 ```
@@ -1992,7 +1992,7 @@ Without updates → salary raises cause false alarms.
 ## 📁 Project Structure
 
 ```
-chakravyuh/
+virgil/
 ├── apps/
 │   ├── api/                          ← FastAPI Backend
 │   │   ├── app/
@@ -2112,6 +2112,6 @@ All 36 tests should pass.
 
 <div align="center">
 
-*Chakravyuh v1.1 — Built for Indian Banking | FIU-IND Compliant | PMLA 2002*
+*Virgil v1.1 — Built for Indian Banking | FIU-IND Compliant | PMLA 2002*
 
 </div>

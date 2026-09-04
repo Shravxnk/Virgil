@@ -26,7 +26,7 @@ async def download_report_pdf(case_id: str):
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'attachment; filename="chakravyuh-report-{case_id}.pdf"',
+            "Content-Disposition": f'attachment; filename="virgil-report-{case_id}.pdf"',
             "X-Report-Id": metadata["report_id"],
             "X-Custody-Hash": metadata["custody_hash"],
         },

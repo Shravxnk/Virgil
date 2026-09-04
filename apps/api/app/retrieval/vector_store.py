@@ -49,7 +49,7 @@ def get_collection(name: str):
     if name not in _collections:
         _collections[name] = client.get_or_create_collection(
             name=name,
-            metadata={"description": f"Chakravyuh {name} collection"},
+            metadata={"description": f"Virgil {name} collection"},
         )
     return _collections[name]
 

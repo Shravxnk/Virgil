@@ -1,4 +1,4 @@
-# 🛡️ Chakravyuh — Everything Explained in Q&A
+# 🛡️ Virgil — Everything Explained in Q&A
 
 > Read this if WALKTHROUGH.md felt too technical.  
 > Plain English. Real examples. No jargon.
@@ -9,7 +9,7 @@
 
 ---
 
-**Q: What is Chakravyuh in one sentence?**
+**Q: What is Virgil in one sentence?**
 
 It is a system that watches every bank transaction in real time, decides whether to allow or block it *before* the money moves, and if something looks fraudulent, it automatically opens an investigation case, writes an AI report, and maps out how the fraud happened.
 
@@ -17,13 +17,13 @@ It is a system that watches every bank transaction in real time, decides whether
 
 **Q: So it actually stops fraud BEFORE it happens? Like before the money leaves?**
 
-Yes. That is the core function. When someone clicks "Send ₹2,50,000" in their banking app, **before the payment network processes it**, Chakravyuh scores it in milliseconds:
+Yes. That is the core function. When someone clicks "Send ₹2,50,000" in their banking app, **before the payment network processes it**, Virgil scores it in milliseconds:
 
 ```
 Customer clicks "Pay"
         │
         ▼
-  Chakravyuh: Is this risky?
+  Virgil: Is this risky?
   [score = 84 → BLOCK]
         │
         ▼
@@ -57,7 +57,7 @@ A complete fraud system needs **both**. Pre-transaction stops simple fraud. Post
 
 **Q: What is a "behavioral profile"?**
 
-Every bank account builds up a pattern of how it normally behaves. Chakravyuh stores this profile for each account in PostgreSQL. Think of it as the account's "fingerprint":
+Every bank account builds up a pattern of how it normally behaves. Virgil stores this profile for each account in PostgreSQL. Think of it as the account's "fingerprint":
 
 ```
 Account: Priya Sharma (ACC-004)
@@ -148,7 +148,7 @@ ATO is especially dangerous because the money leaves a real, legitimate account 
 
 ---
 
-**Q: How does Chakravyuh detect the ATO → transaction abuse chain?**
+**Q: How does Virgil detect the ATO → transaction abuse chain?**
 
 ATO always leaves a trace. The chain looks like this:
 
@@ -163,7 +163,7 @@ STAGE 2: Exploitation signals (same session)
   ├── Transfer to new/unknown beneficiary
   └── Transfer to a "mule" account (prior_investigation flag)
 
-STAGE 3: Chakravyuh connects the chain
+STAGE 3: Virgil connects the chain
   ├── Device mismatch    → +15 points
   ├── Amount deviation   → +23 points
   ├── New beneficiary    → +16 points
@@ -187,7 +187,7 @@ Stolen money enters:
               ACC-017 (cash out point)
 ```
 
-Chakravyuh detects this through the **graph/network check**:
+Virgil detects this through the **graph/network check**:
 - It builds a directed graph of all transactions
 - Looks for **circular paths**: did money go A→B→C→A?
 - Looks for **layering**: did money pass through 3+ hops?
@@ -216,7 +216,7 @@ Day 3:  ₹8,90,000 transfer  ← just under ₹10L threshold
 
 Each individual transfer looks "fine." Together they reveal structuring intent.
 
-Chakravyuh's velocity check flags this pattern over rolling time windows.
+Virgil's velocity check flags this pattern over rolling time windows.
 
 ---
 
@@ -229,7 +229,7 @@ Chakravyuh's velocity check flags this pattern over rolling time windows.
 ```
 STEP 1: Customer hits "Send ₹2,50,000"
 ─────────────────────────────────────
-The bank's app calls Chakravyuh's API:
+The bank's app calls Virgil's API:
 POST /api/transactions/score
 {
   "from_account": "ACC-004",
@@ -354,7 +354,7 @@ Under **PMLA 2002 (Prevention of Money Laundering Act)**, every bank must:
 - File an STR within **7 working days** of detecting suspicious activity
 - File a CTR for cash transactions **above ₹10 lakh**
 
-Chakravyuh auto-generates this report in the correct FIU-IND format with:
+Virgil auto-generates this report in the correct FIU-IND format with:
 - Subject identification (who is suspected)
 - Nature of suspicious activity
 - Indicators of suspicion (all the signals)
@@ -369,14 +369,14 @@ This saves the analyst 2-3 hours of manual report writing per case.
 
 ---
 
-**Q: Does Chakravyuh use machine learning? How does it improve over time?**
+**Q: Does Virgil use machine learning? How does it improve over time?**
 
 The current scoring engine is **deterministic** (rule-based), not an ML model. This is intentional for a v1 system — deterministic rules are:
 - Explainable ("blocked because 14.2x amount deviation")
 - Auditable by RBI
 - Predictable (no random model drift)
 
-The "learning" in Chakravyuh v1 happens through 3 mechanisms:
+The "learning" in Virgil v1 happens through 3 mechanisms:
 
 **Mechanism 1: Analyst Feedback Loop**
 ```
@@ -453,7 +453,7 @@ The AI doesn't make the decision — it **explains** the decision. The math make
 
 ---
 
-**Q: "Build behavioral user profiles and anomaly detection" — what does this mean in Chakravyuh?**
+**Q: "Build behavioral user profiles and anomaly detection" — what does this mean in Virgil?**
 
 Every account in the system has a profile stored in PostgreSQL with their normal behavior patterns (average amount, usual hours, usual recipients). Every time a transaction comes in, those 5 scoring checks compare the incoming transaction to the profile. The gap between "what is normal for this person" and "what this transaction looks like" produces the anomaly score.
 
@@ -461,7 +461,7 @@ Every account in the system has a profile stored in PostgreSQL with their normal
 
 **Q: "Detect fraud chains (ATO → transaction abuse)" — what does this mean?**
 
-ATO = Account Takeover. When a fraudster steals someone's password and logs in, they trigger device mismatch signals. When they immediately try to steal money, they trigger amount anomaly + new beneficiary signals. Chakravyuh connects these breadcrumbs and recognizes the pattern as a fraud chain, not isolated events.
+ATO = Account Takeover. When a fraudster steals someone's password and logs in, they trigger device mismatch signals. When they immediately try to steal money, they trigger amount anomaly + new beneficiary signals. Virgil connects these breadcrumbs and recognizes the pattern as a fraud chain, not isolated events.
 
 ---
 
@@ -552,4 +552,4 @@ The system watches fraud at every stage: before it happens, while it's happening
 
 ---
 
-*Chakravyuh v1.1 — Built for Indian Banking | FIU-IND compliant | PMLA 2002*
+*Virgil v1.1 — Built for Indian Banking | FIU-IND compliant | PMLA 2002*

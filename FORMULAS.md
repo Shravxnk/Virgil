@@ -1,4 +1,4 @@
-# 📐 Chakravyuh — Every Formula, Simply Explained
+# 📐 Virgil — Every Formula, Simply Explained
 
 > Plain English. No jargon. Every formula used in the system, what it does, and why.
 
@@ -460,4 +460,4 @@ Only clusters with 3 or more accounts are shown. A cluster of 2 accounts is just
 
 ---
 
-*Chakravyuh v1.1 — Scoring engine: `apps/api/app/core/scoring.py`*
+*Virgil v1.1 — Scoring engine: `apps/api/app/core/scoring.py`*

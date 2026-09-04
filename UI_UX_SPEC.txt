@@ -1,5 +1,5 @@
 ================================================================================
-CHAKRAVYUH — COMPLETE UI/UX SPECIFICATION
+VIRGIL — COMPLETE UI/UX SPECIFICATION
 For UI redesign briefing
 ================================================================================
 
@@ -92,7 +92,7 @@ SHELL STRUCTURE
   No mobile hamburger — desktop-optimised layout.
 
 HEADER (top bar)
-  Left:   App logo / title "Chakravyuh"
+  Left:   App logo / title "Virgil"
   Centre: Live clock showing IST time (HH:MM:SS, updates every second)
   Right:  Bell icon (notifications) · Sun/Moon theme toggle · User avatar + "Analyst"
 

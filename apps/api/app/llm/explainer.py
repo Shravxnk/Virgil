@@ -285,7 +285,7 @@ def generate_report_narrative(case_data: dict, context: str = "") -> str:
 
     prompt = f"""STR/FIU REPORT NARRATIVE REQUEST
 
-REPORTING ENTITY: Chakravyuh Bank (Fictional Entity for Demo)
+REPORTING ENTITY: Virgil Bank (Fictional Entity for Demo)
 REPORT TYPE: Suspicious Transaction Report (STR) under PMLA 2002 / FIU-IND
 
 SUBJECT CASE:

@@ -1,7 +1,7 @@
-# 🛡️ Chakravyuh — Complete System Walkthrough
+# 🛡️ Virgil — Complete System Walkthrough
 
 > **For:** Product demos, onboarding, and non-technical stakeholders  
-> **What is Chakravyuh?** An AI-powered fraud intelligence system built for Indian banks. It detects fraud **before** a transaction happens (real-time block/approve) and **after** it happens (case investigation, FIU report generation).
+> **What is Virgil?** An AI-powered fraud intelligence system built for Indian banks. It detects fraud **before** a transaction happens (real-time block/approve) and **after** it happens (case investigation, FIU report generation).
 
 ---
 
@@ -72,7 +72,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  🛡️ Chakravyuh                    [Analyst Console]  │
+│  🛡️ Virgil                    [Analyst Console]  │
 │                                   [Executive Dashboard│
 ├──────────────────────────────────────────────────────┤
 │                                                      │
@@ -118,7 +118,7 @@ The Analyst Console is for the **bank's fraud investigation team** — the peopl
 
 ```
 ┌─────────────────────────────────────────────┐
-│  🛡️ Chakravyuh        INVESTIGATION         │
+│  🛡️ Virgil        INVESTIGATION         │
 │  Analyst Console                            │
 │  ─────────────────                          │
 │  🏠 Dashboard         ◄── Your home screen │
@@ -550,7 +550,7 @@ The Executive Dashboard is for **senior management** — CFO, CRO, CEO. They don
 
 ```
 ┌─────────────────────────────────────────────┐
-│  🛡️ Chakravyuh        MANAGEMENT            │
+│  🛡️ Virgil        MANAGEMENT            │
 │  Executive Dashboard                        │
 │  ─────────────────                          │
 │  🏠 Overview         ◄── KPIs + charts      │
@@ -1016,7 +1016,7 @@ Browser ── GET /api/report/CASE-005/pdf ──► Backend
                                     └─────────┬──────────┘
                                               │
 Browser ◄── PDF file download ───────────────┘
-         filename: chakravyuh-report-CASE-005.pdf
+         filename: virgil-report-CASE-005.pdf
 ```
 
 ---
@@ -1024,7 +1024,7 @@ Browser ◄── PDF file download ──────────────�
 ## 📁 File Structure Quick Reference
 
 ```
-chakravyuh/
+virgil/
 ├── apps/
 │   ├── api/                     ← Python FastAPI Backend
 │   │   └── app/
@@ -1095,4 +1095,4 @@ chakravyuh/
 
 ---
 
-*Generated: April 3, 2026 | Chakravyuh v1.1 | Built for Indian Banking*
+*Generated: April 3, 2026 | Virgil v1.1 | Built for Indian Banking*

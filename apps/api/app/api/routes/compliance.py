@@ -295,7 +295,7 @@ async def get_model_health():
         insights.append({"level": "healthy", "metric": "False Positive Rate", "message": f"False positive rate {fp_rate:.1%} — within operational tolerance."})
 
     return {
-        "engine_name": "Chakravyuh Rule-Based Scoring Engine v1.1",
+        "engine_name": "Virgil Rule-Based Scoring Engine v1.1",
         "engine_type": "Deterministic / Rule-Based + Graph Analytics",
         "status": "operational",
         "last_retrained": model.get("last_retrained", "2026-03-15"),
