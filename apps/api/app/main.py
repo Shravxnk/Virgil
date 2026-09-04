@@ -154,7 +154,7 @@ async def lifespan(app: FastAPI):
     # ① Always seed runtime store (works even without PostgreSQL)
     try:
         from app.core.data_generator import generate_seed_data
-        from app.db.repositories.runtime_store import store_alert, store_case, store_transaction, store_profile
+        from app.db.repositories.runtime_store import store_alert, store_case, store_transaction
         _seed = generate_seed_data()
         for _a in _seed["alerts"]:
             store_alert(_a)
@@ -162,9 +162,10 @@ async def lifespan(app: FastAPI):
             store_case(_c)
         for _t in _seed["transactions"]:
             store_transaction(_t)
-        for _p in _seed.get("profiles", []):
-            store_profile(_p)
-        print(f"[Virgil] Runtime store seeded: {len(_seed['alerts'])} alerts, {len(_seed['cases'])} cases, {len(_seed['transactions'])} txns, {len(_seed.get('profiles', []))} profiles.")
+        # Profiles/devices are intentionally NOT seeded from the generator here —
+        # see the note in runtime_store._auto_seed for why (keeps the account
+        # dropdown and the scoring engine looking at the same account data).
+        print(f"[Virgil] Runtime store seeded: {len(_seed['alerts'])} alerts, {len(_seed['cases'])} cases, {len(_seed['transactions'])} txns.")
     except Exception as _e:
         print(f"[Virgil] Runtime store seeding failed: {_e}")
     # ② PostgreSQL (optional — failures do not affect runtime store)

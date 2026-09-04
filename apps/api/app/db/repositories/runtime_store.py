@@ -112,6 +112,16 @@ def update_pre_txn(pre_id: str, updates: dict) -> bool:
 # The lifespan will overwrite these same keys (idempotent).
 # ---------------------------------------------------------------------------
 def _auto_seed() -> None:
+    # NOTE: deliberately does NOT seed `_profiles` or `_devices` from the
+    # synthetic generator. Those two caches are checked before the static
+    # data/sample/*.json files (see get_profile_by_account /
+    # get_devices_for_account in data_loader.py), and the generator's
+    # synthetic accounts use a *different* name/attribute mapping for the
+    # same account IDs than the static files and the account listing
+    # (account_repo.find_account) use — populating them here made the UI's
+    # account dropdown and the actual scoring engine disagree about who each
+    # account even is. Leaving these two empty means both consistently read
+    # from the same static JSON files.
     try:
         from app.core.data_generator import generate_seed_data
         _seed = generate_seed_data()
@@ -121,10 +131,6 @@ def _auto_seed() -> None:
             _cases[_c["id"]] = _c
         for _t in _seed["transactions"]:
             _transactions[_t["id"]] = _t
-        for _p in _seed.get("profiles", []):
-            _profiles[_p["account_id"]] = _p
-        for _d in _seed.get("devices", []):
-            _devices.setdefault(_d["account_id"], []).append(_d)
     except Exception:
         pass  # generator unavailable — store stays empty until lifespan seeds it
 

@@ -259,16 +259,16 @@ async def score_pre_transaction(req: PreTxnRequest):
         currency=req.currency,
     )
 
-    # Score the transaction using the deterministic engine (offload to thread)
+    # Score the transaction using the deterministic engine (offload to thread).
+    # Device trust is looked up server-side from the sender's registered
+    # devices — req.device_known is accepted for logging/display but is not
+    # trusted for scoring, since a client can't reliably self-report it.
     result = await asyncio.to_thread(
         score_transaction_params,
         from_account=req.from_account,
         to_account=req.to_account,
         amount=req.amount,
         txn_hour=datetime.now(timezone.utc).hour,
-        device_known=req.device_known,
-        device_trust=70 if req.device_known else 20,
-        ip_risk="high" if req.ip_address and req.ip_address.startswith("185.") else "low",
         currency=req.currency,
     )
 

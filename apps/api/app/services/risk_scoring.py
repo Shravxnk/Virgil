@@ -40,6 +40,30 @@ def _profile_usual_hours(profile: dict) -> tuple[int, int]:
     return start, end
 
 
+def _device_signals(account_id: str) -> tuple[bool, float, str]:
+    """Derive (known_device, device_trust, ip_risk) from the account's registered
+    devices, so pre-transaction scoring reflects real per-account device history
+    instead of trusting whatever the client claims."""
+    sender_devices = get_devices_for_account(account_id)
+
+    known_device = any(d["trust_score"] > 50 for d in sender_devices) if sender_devices else True
+    device_trust = max(d["trust_score"] for d in sender_devices) if sender_devices else 70
+
+    recent_devices = sorted(sender_devices, key=lambda d: d["last_seen"], reverse=True)
+    if recent_devices and recent_devices[0]["trust_score"] < 30:
+        known_device = False
+        device_trust = recent_devices[0]["trust_score"]
+
+    ip_risk = "low"
+    if recent_devices:
+        if recent_devices[0]["trust_score"] < 20:
+            ip_risk = "high"
+        elif recent_devices[0]["trust_score"] < 50:
+            ip_risk = "medium"
+
+    return known_device, device_trust, ip_risk
+
+
 def _check_graph_signals(account_id: str, transactions: list[dict]) -> dict:
     """Quick graph signal check for an account."""
     related = [
@@ -95,7 +119,6 @@ def score_transaction(transaction_id: str) -> RiskScoreResponse:
 
     sender_profile = get_profile_by_account(txn["from_account"])
     receiver_profile = get_profile_by_account(txn["to_account"])
-    sender_devices = get_devices_for_account(txn["from_account"])
     all_transactions = load_transactions()
 
     baseline_avg = _profile_baseline_avg(sender_profile) if sender_profile else 0
@@ -109,24 +132,7 @@ def score_transaction(transaction_id: str) -> RiskScoreResponse:
     except (TypeError, ValueError, AttributeError):
         txn_hour = 12  # safe default
 
-    known_device = any(d["trust_score"] > 50 for d in sender_devices) if sender_devices else True
-    device_trust = (
-        max(d["trust_score"] for d in sender_devices) if sender_devices else 70
-    )
-
-    # Check if device used has low trust (potential new/compromised device)
-    recent_devices = sorted(sender_devices, key=lambda d: d["last_seen"], reverse=True)
-    if recent_devices and recent_devices[0]["trust_score"] < 30:
-        known_device = False
-        device_trust = recent_devices[0]["trust_score"]
-
-    ip_risk = "low"
-    if recent_devices:
-        # Use lowest trust device's implied risk
-        if recent_devices[0]["trust_score"] < 20:
-            ip_risk = "high"
-        elif recent_devices[0]["trust_score"] < 50:
-            ip_risk = "medium"
+    known_device, device_trust, ip_risk = _device_signals(txn["from_account"])
 
     is_first_time = True
     if sender_profile:
@@ -172,12 +178,15 @@ def score_transaction_params(
     to_account: str,
     amount: float,
     txn_hour: int,
-    device_known: bool = False,
-    device_trust: float = 70.0,
-    ip_risk: str = "low",
     currency: str = "INR",
 ) -> dict:
-    """Score a transaction from raw parameters (pre-transaction, before DB entry exists)."""
+    """Score a transaction from raw parameters (pre-transaction, before DB entry exists).
+
+    Device trust is looked up server-side from the sender's registered devices
+    (data/sample/devices.json) rather than trusting a client-supplied flag —
+    the client can't be trusted to accurately self-report whether its device
+    is "known".
+    """
     sender_profile = get_profile_by_account(from_account)
     receiver_profile = get_profile_by_account(to_account)
     all_transactions = load_transactions()
@@ -186,6 +195,8 @@ def score_transaction_params(
     usual_start, usual_end = (
         _profile_usual_hours(sender_profile) if sender_profile else (9, 17)
     )
+
+    device_known, device_trust, ip_risk = _device_signals(from_account)
 
     is_first_time = True
     if sender_profile:
