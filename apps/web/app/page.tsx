@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Shield, Eye, BarChart3, FlaskConical, ArrowRight, Lock, Zap, Network, Brain } from 'lucide-react';
+import { Shield, Eye, FlaskConical, ArrowRight, Lock, Zap, Network, Brain } from 'lucide-react';
 
 export default function HomePage() {
   return (
@@ -86,7 +86,7 @@ export default function HomePage() {
 
       {/* Navigation Cards */}
       <div className="flex flex-col items-center px-6 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full max-w-4xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full max-w-3xl">
 
           {/* Analyst Console */}
           <div
@@ -127,44 +127,8 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Executive Dashboard */}
-          <div
-            className="rounded p-5 flex flex-col gap-4 relative overflow-hidden group transition-all hover:-translate-y-0.5"
-            style={{ backgroundColor: '#111827', border: '1px solid #1E2D45' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#6366F160'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#1E2D45'; }}
-          >
-            <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t" style={{ background: 'linear-gradient(90deg, #6366F1, transparent)' }} />
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded" style={{ backgroundColor: '#6366F115', border: '1px solid #6366F130' }}>
-                <BarChart3 className="h-4 w-4" style={{ color: '#818CF8' }} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold font-display" style={{ color: '#F0F4FF' }}>Executive Dashboard</p>
-                <p className="text-[11px]" style={{ color: '#8899BB' }}>Enterprise oversight</p>
-              </div>
-            </div>
-            <ul className="space-y-2">
-              {[
-                [BarChart3, 'Fraud KPIs and trend charts'],
-                [Zap, 'Model accuracy and precision'],
-                [Lock, 'Compliance score and SARs'],
-                [Network, 'Risk category breakdown'],
-              ].map(([Icon, text]: any) => (
-                <li key={text} className="flex items-center gap-2 text-[11px]" style={{ color: '#8899BB' }}>
-                  <Icon className="h-3 w-3 flex-shrink-0" style={{ color: '#6366F1' }} />
-                  {text}
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/executive"
-              className="flex items-center justify-center gap-2 rounded py-2 text-xs font-semibold transition-all"
-              style={{ backgroundColor: '#1A2235', color: '#818CF8', border: '1px solid #6366F140' }}
-            >
-              Open Executive Dashboard <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+          {/* Executive Dashboard card hidden for the first review — pages
+              still exist at /executive/*, just not linked from here yet. */}
 
           {/* Demo / Test Simulation */}
           <div

@@ -10,9 +10,6 @@ import {
   Eye,
   Activity,
   CreditCard,
-  TrendingUp,
-  Shield,
-  Brain,
   FileText,
   Home,
 } from 'lucide-react';
@@ -29,14 +26,8 @@ const navSections = [
       { href: '/analyst/transactions',         label: 'Transaction Scorer', icon: CreditCard,      exact: false },
     ],
   },
-  {
-    label: 'EXECUTIVE INTELLIGENCE',
-    links: [
-      { href: '/executive',                    label: 'Overview',          icon: TrendingUp,      exact: true  },
-      { href: '/executive/compliance',         label: 'Compliance & STR/CTR', icon: Shield,       exact: false },
-      { href: '/executive/model-health',       label: 'Model Health',      icon: Brain,           exact: false },
-    ],
-  },
+  // EXECUTIVE INTELLIGENCE section hidden for the first review — the pages
+  // still exist at /executive/*, just unlinked from navigation for now.
 ];
 
 function ShieldIcon() {
