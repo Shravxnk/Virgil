@@ -342,7 +342,7 @@ export default function DBMPage() {
             <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #1A73E8, #4285F4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🗄️</div>
             <div>
               <div style={{ fontSize: 18, fontWeight: 700, color: '#202124' }}>DB Manager</div>
-              <div style={{ fontSize: 11, color: '#9AA0A6' }}>Chakravyuh · Full Database Control</div>
+              <div style={{ fontSize: 11, color: '#9AA0A6' }}>Virgil · Full Database Control</div>
             </div>
           </div>
 

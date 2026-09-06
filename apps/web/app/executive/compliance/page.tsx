@@ -112,7 +112,7 @@ function STRFormModal({ report, onClose }: { report: ComplianceReport; onClose: 
             <TwoCol>
               <Field label="FIU-IND Reference No." value={report.report_id} mono />
               <Field label="Report Type" value={report.report_type === 'STR' ? 'Suspicious Transaction Report (STR)' : 'Cash Transaction Report (CTR/FCR)'} />
-              <Field label="Reporting Entity" value="Chakravyuh National Bank Ltd." />
+              <Field label="Reporting Entity" value="Virgil National Bank Ltd." />
               <Field label="BSR / Licence No." value="CHK-RBI-2019-004821" mono />
               <Field label="Branch / Originating Unit" value="Central Fraud Intelligence Unit" />
               <Field label="MLRO / Filing Officer" value={report.assigned_analyst || 'Compliance Officer'} />
@@ -196,7 +196,7 @@ function STRFormModal({ report, onClose }: { report: ComplianceReport; onClose: 
           {/* Section F: Declaration */}
           <Section label="F — Declaration & Authorisation">
             <div style={{ padding: '12px 16px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 6, fontSize: 12, color: '#475569', lineHeight: 1.7 }}>
-              I, the undersigned MLRO / Compliance Officer of <strong>Chakravyuh National Bank Ltd.</strong>, hereby certify that this
+              I, the undersigned MLRO / Compliance Officer of <strong>Virgil National Bank Ltd.</strong>, hereby certify that this
               {report.report_type} has been prepared in good faith based on the information available and constitutes a bona fide
               report as required under <strong>Section 12(1)(b) of the Prevention of Money Laundering Act, 2002</strong> and the
               rules thereunder. The information contained herein is true and correct to the best of my knowledge.

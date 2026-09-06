@@ -51,7 +51,7 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-01', group: 'A',
     title: 'Behavioral Risk Scoring',
-    description: 'The system computes a real-time risk score before any money moves, using 5 weighted signal dimensions: amount anomaly (how far this transaction deviates from the account\'s average), time anomaly (is it outside normal hours?), device risk (is this a trusted device?), beneficiary risk (is the receiver flagged?), and graph/network risk (are there circular patterns?). The score determines whether Chakravyuh approves, blocks, requests MFA, or sends for manual analyst review — all in milliseconds, before bank settlement.',
+    description: 'The system computes a real-time risk score before any money moves, using 5 weighted signal dimensions: amount anomaly (how far this transaction deviates from the account\'s average), time anomaly (is it outside normal hours?), device risk (is this a trusted device?), beneficiary risk (is the receiver flagged?), and graph/network risk (are there circular patterns?). The score determines whether Virgil approves, blocks, requests MFA, or sends for manual analyst review — all in milliseconds, before bank settlement.',
     persona: '👤 Ravi Kumar — retail UPI user, average ₹5K–₹20K. Now initiating ₹75,000 UPI to a known beneficiary from a trusted device at 11 AM from Mumbai. Moderate amount deviation of ~5x.',
     expectedDecision: 'mfa',
     apiEndpoint: 'POST /api/transactions/score',
@@ -87,7 +87,7 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-04', group: 'A',
     title: 'Extreme Amount Anomaly Detection',
-    description: 'The amount anomaly signal computes the deviation ratio: (current amount ÷ account\'s 90-day average). An account with a ₹8,000 average suddenly attempting a ₹38 lakh RTGS transfer to a Suspense account is a deviation ratio of 475x. Chakravyuh\'s scoring engine assigns a high component score for amount_anomaly alone (0.25 × 100 = 25 points), and when combined with an unknown device and high-risk IP, the total score breaches 80 — triggering an immediate BLOCK before RTGS settlement.',
+    description: 'The amount anomaly signal computes the deviation ratio: (current amount ÷ account\'s 90-day average). An account with a ₹8,000 average suddenly attempting a ₹38 lakh RTGS transfer to a Suspense account is a deviation ratio of 475x. Virgil\'s scoring engine assigns a high component score for amount_anomaly alone (0.25 × 100 = 25 points), and when combined with an unknown device and high-risk IP, the total score breaches 80 — triggering an immediate BLOCK before RTGS settlement.',
     persona: '👤 Priya Singh — small business owner, avg transaction ₹8K. Attempting ₹38L RTGS to ACC-SUSPENSE-04 (no prior transaction history, opened 3 days ago) from new device DEV-UNK, IP 185.190.24.10 (proxy/VPN).',
     expectedDecision: 'block',
     apiEndpoint: 'POST /api/transactions/score',
@@ -99,7 +99,7 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-05', group: 'A',
     title: 'Off-Hours Transaction Anomaly',
-    description: 'Time-of-transaction is a strong behavioral signal. When account activity logs show a user exclusively transacts between 9 AM and 8 PM for 18 months, a 3:17 AM IMPS becomes highly anomalous. The TIME_ANOMALY reason code fires with high weight. This is a classic Account Takeover signal — attackers often operate at night when the victim is asleep and cannot receive MFA notifications immediately. Chakravyuh flags this for manual analyst review rather than outright blocking, as a small number of legitimate late-night transactions do occur.',
+    description: 'Time-of-transaction is a strong behavioral signal. When account activity logs show a user exclusively transacts between 9 AM and 8 PM for 18 months, a 3:17 AM IMPS becomes highly anomalous. The TIME_ANOMALY reason code fires with high weight. This is a classic Account Takeover signal — attackers often operate at night when the victim is asleep and cannot receive MFA notifications immediately. Virgil flags this for manual analyst review rather than outright blocking, as a small number of legitimate late-night transactions do occur.',
     persona: '👤 Arjun Nair — salaried professional, 18 months of transaction history, 100% within 9 AM–8 PM window. Current transaction: IMPS ₹2.85L at 03:17 IST to a first-time beneficiary in Kolkata from a trusted device but unusual IP.',
     expectedDecision: 'manual_review',
     apiEndpoint: 'POST /api/transactions/score',
@@ -111,7 +111,7 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-06', group: 'A',
     title: 'First-Time Beneficiary Screening',
-    description: 'Sending money to a beneficiary an account has never transacted with before is a moderate-risk signal — especially when the amount is large. Chakravyuh tracks beneficiary history per account and flags FIRST_TIME_BENEFICIARY when no prior transaction exists with the receiver. When combined with a large transfer amount, this becomes a strong indicator of fraud (social engineering victims often transfer money to attackers\' mule accounts they\'ve never used before). This scenario shows a ₹6.75L NEFT to a shell company account the sender has never used.',
+    description: 'Sending money to a beneficiary an account has never transacted with before is a moderate-risk signal — especially when the amount is large. Virgil tracks beneficiary history per account and flags FIRST_TIME_BENEFICIARY when no prior transaction exists with the receiver. When combined with a large transfer amount, this becomes a strong indicator of fraud (social engineering victims often transfer money to attackers\' mule accounts they\'ve never used before). This scenario shows a ₹6.75L NEFT to a shell company account the sender has never used.',
     persona: '👤 Kavita Desai — financial manager, average ₹15K transactions. Being social engineered — transferring ₹6.75L NEFT to ACC-FIRSTTIME-06 (a freshly-created shell company at a Tier-2 bank) from a trusted device at a normal hour.',
     expectedDecision: 'manual_review',
     apiEndpoint: 'POST /api/transactions/score',
@@ -135,7 +135,7 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-08', group: 'A',
     title: 'Account Takeover + High-Value Drain',
-    description: 'Account Takeover (ATO) is the highest-severity fraud pattern. The attacker\'s kill chain: (1) Credential stuffing from leaked database, (2) Login from Tor node IP 185.220.101.99, (3) Password reset via SMS OTP interception, (4) Trusted beneficiary removed and new mule account added as beneficiary, (5) Maximum RTGS initiated 22 minutes after login. Chakravyuh detects the entire chain: new device + high-risk IP + amount 76x above baseline + first-time beneficiary + graph risk from the mule account\'s known network → BLOCK fires before RTGS settlement.',
+    description: 'Account Takeover (ATO) is the highest-severity fraud pattern. The attacker\'s kill chain: (1) Credential stuffing from leaked database, (2) Login from Tor node IP 185.220.101.99, (3) Password reset via SMS OTP interception, (4) Trusted beneficiary removed and new mule account added as beneficiary, (5) Maximum RTGS initiated 22 minutes after login. Virgil detects the entire chain: new device + high-risk IP + amount 76x above baseline + first-time beneficiary + graph risk from the mule account\'s known network → BLOCK fires before RTGS settlement.',
     persona: '👤 Suresh Agarwal — HNI account (₹85K avg). Attacker logged in 22 minutes ago from IP 185.220.101.99 (Tor), changed password, added new beneficiary ACC-ATTACKER-08, now initiating ₹65L RTGS.',
     expectedDecision: 'block',
     apiEndpoint: 'POST /api/transactions/score',
@@ -227,7 +227,7 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-16', group: 'B',
     title: 'AI-Generated Alert Explanation',
-    description: 'When an analyst opens an alert, they can request a RAG-powered briefing from Chakravyuh\'s explanation layer. The system loads the full alert context — risk score, reason codes, account details, amount, device analysis, network graph signals — and retrieves relevant context from ChromaDB + PostgreSQL before generating a professional investigation briefing in plain English: what triggered the alert, why it is suspicious, what the analyst must do next, and applicable PMLA/RBI obligations.',
+    description: 'When an analyst opens an alert, they can request a RAG-powered briefing from Virgil\'s explanation layer. The system loads the full alert context — risk score, reason codes, account details, amount, device analysis, network graph signals — and retrieves relevant context from ChromaDB + PostgreSQL before generating a professional investigation briefing in plain English: what triggered the alert, why it is suspicious, what the analyst must do next, and applicable PMLA/RBI obligations.',
     persona: '🧑‍💼 Analyst Kavya Rao opens ALT-001 (Meridian Holdings circular transfer, 92/100) and asks "Why was this flagged?". RAG + ChromaDB returns a full FIU-analyst-style briefing in under 3 seconds.',
     expectedDecision: 'manual_review',
     apiEndpoint: 'GET /api/alerts/ALT-GEN-001/explain',
@@ -238,7 +238,7 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-17', group: 'B',
     title: 'Evidence Package for Prosecution',
-    description: 'Once a case is confirmed as fraud, the analyst must assemble an evidence package that is legally defensible in court or for STR submission to FIU-IND. Chakravyuh\'s evidence metadata includes: alert IDs with timestamps, transaction IDs with UTR references, device forensics, network graph nodes/edges, behavioral deviation analysis, and a SHA-256 chain-of-custody hash. The hash ensures that evidence has not been tampered with between collection and submission to the Financial Intelligence Unit.',
+    description: 'Once a case is confirmed as fraud, the analyst must assemble an evidence package that is legally defensible in court or for STR submission to FIU-IND. Virgil\'s evidence metadata includes: alert IDs with timestamps, transaction IDs with UTR references, device forensics, network graph nodes/edges, behavioral deviation analysis, and a SHA-256 chain-of-custody hash. The hash ensures that evidence has not been tampered with between collection and submission to the Financial Intelligence Unit.',
     persona: '🧑‍💼 Analyst Rahul Mehta working CASE-005 (mule network, ₹4.1Cr, escalated). Building evidence package for STR filing: full alert chain ALT-007+ALT-008, SHA-256 hash, transaction IDs, and analyst notes.',
     expectedDecision: 'block',
     apiEndpoint: 'GET /api/cases/CASE-GEN-005',
@@ -249,7 +249,7 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-18', group: 'B',
     title: 'FIU-IND Compliance Report Generation',
-    description: 'Under PMLA 2002, Indian banks must file Suspicious Transaction Reports (STRs) with FIU-IND within 7 working days of suspicion. Chakravyuh\'s ReportLab-powered PDF generator creates a SAR-quality compliance document for CASE-005: Section A (subject identification), Section B (nature of suspicious activity), Section C (typology indicators), Section D (risk assessment), and Section E (actions taken). The PDF includes the SHA-256 chain-of-custody hash on the cover page, ensuring legal admissibility.',
+    description: 'Under PMLA 2002, Indian banks must file Suspicious Transaction Reports (STRs) with FIU-IND within 7 working days of suspicion. Virgil\'s ReportLab-powered PDF generator creates a SAR-quality compliance document for CASE-005: Section A (subject identification), Section B (nature of suspicious activity), Section C (typology indicators), Section D (risk assessment), and Section E (actions taken). The PDF includes the SHA-256 chain-of-custody hash on the cover page, ensuring legal admissibility.',
     persona: '🧑‍💼 Compliance Officer Deepika Sharma — filing STR for CASE-005 (confirmed mule network, ₹4.1Cr). PDF generated with full narrative, transaction graph, evidence hash. Submitted to FIU-IND via FINnet portal.',
     expectedDecision: 'block',
     apiEndpoint: 'GET /api/report/CASE-GEN-005/pdf',
@@ -345,7 +345,7 @@ const USE_CASES: UseCase[] = [
     id: 'UC-26', group: 'D',
     title: 'Enterprise-Wide Risk KPIs',
     description: 'The executive dashboard aggregates system-wide fraud intelligence into C-suite-ready KPIs. The GET /api/dashboard/executive endpoint returns: total fraud detected this month (₹ exposure), total fraud prevented by pre-transaction blocking, false positive rate (percentage of flagged transactions that were legitimate), detection rate, and a model health summary. The GET /api/dashboard/analyst endpoint provides the analyst-level counters: open alerts by severity, cases by status, average resolution time.',
-    persona: '👔 Chief Risk Officer Vikram Rao opens the executive dashboard for the Monday morning risk review: sees ₹12.3Cr fraud detected, ₹3.1Cr prevented by Chakravyuh pre-transaction engine, 23 open cases, 87% detection rate.',
+    persona: '👔 Chief Risk Officer Vikram Rao opens the executive dashboard for the Monday morning risk review: sees ₹12.3Cr fraud detected, ₹3.1Cr prevented by Virgil pre-transaction engine, 23 open cases, 87% detection rate.',
     expectedDecision: 'approve',
     apiEndpoint: 'GET /api/dashboard/executive + /api/dashboard/analyst',
     navigateTo: '/executive', navigateLabel: 'Open Executive Dashboard',
@@ -366,7 +366,7 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-28', group: 'D',
     title: 'ML Model Health Monitoring',
-    description: 'ML models degrade over time as fraud patterns evolve — a phenomenon called model drift. The executive dashboard\'s model health panel tracks: accuracy, precision, recall, F1 score, last retrained date, and explainability metrics. A drop in recall means the model is missing fraud (dangerous). A drop in precision means too many false positives (operational burden). The CTO/Head of Risk Technology uses this panel to decide when to trigger a model retraining cycle and validate that Chakravyuh\'s detection quality is maintained.',
+    description: 'ML models degrade over time as fraud patterns evolve — a phenomenon called model drift. The executive dashboard\'s model health panel tracks: accuracy, precision, recall, F1 score, last retrained date, and explainability metrics. A drop in recall means the model is missing fraud (dangerous). A drop in precision means too many false positives (operational burden). The CTO/Head of Risk Technology uses this panel to decide when to trigger a model retraining cycle and validate that Virgil\'s detection quality is maintained.',
     persona: '👔 Head of Risk Technology Anand Raj reviews model metrics: F1=0.89, Precision=0.91, Recall=0.87. Last retrained 18 days ago. Recall trending down over 7 days — schedules retraining review for next sprint.',
     expectedDecision: 'approve',
     apiEndpoint: 'GET /api/dashboard/executive → model_health section',
@@ -377,7 +377,7 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-29', group: 'D',
     title: 'Fraud Trend Analysis — 12-Month View',
-    description: 'Trend analysis reveals whether the bank\'s fraud prevention posture is improving or deteriorating over time. The executive dashboard plots: monthly fraud detected (₹), monthly fraud prevented (₹), number of cases, and the prevention-to-detection ratio. A rising prevention ratio means Chakravyuh\'s pre-transaction blocking is maturing. A spike in detected but unblocked fraud signals model drift or new attack vectors emerging. The CFO uses this for quarterly board presentations and ROI justification.',
+    description: 'Trend analysis reveals whether the bank\'s fraud prevention posture is improving or deteriorating over time. The executive dashboard plots: monthly fraud detected (₹), monthly fraud prevented (₹), number of cases, and the prevention-to-detection ratio. A rising prevention ratio means Virgil\'s pre-transaction blocking is maturing. A spike in detected but unblocked fraud signals model drift or new attack vectors emerging. The CFO uses this for quarterly board presentations and ROI justification.',
     persona: '👔 CFO Meena Krishnan presents to the board: 12-month chart showing fraud detected climbing from ₹3.2Cr (April) to ₹12.3Cr (March) — 3.8x growth YoY, but prevention rate improved from 22% to 38% over same period.',
     expectedDecision: 'approve',
     apiEndpoint: 'GET /api/dashboard/executive → trends section',
@@ -423,7 +423,7 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-33', group: 'E',
     title: 'ChromaDB Semantic Case Retrieval',
-    description: 'Chakravyuh maintains a vector store (ChromaDB) of historical fraud cases, policy documents, and investigation patterns. When an analyst investigates a new case, the system uses semantic search to retrieve the 3 most similar historical cases — helping the analyst pattern-match the current investigation against past confirmed frauds. The vector embeddings capture semantic similarity across fraud typologies, so "hawala money transfer via shell companies" will retrieve structuring and layering cases even if those exact words don\'t appear in the query.',
+    description: 'Virgil maintains a vector store (ChromaDB) of historical fraud cases, policy documents, and investigation patterns. When an analyst investigates a new case, the system uses semantic search to retrieve the 3 most similar historical cases — helping the analyst pattern-match the current investigation against past confirmed frauds. The vector embeddings capture semantic similarity across fraud typologies, so "hawala money transfer via shell companies" will retrieve structuring and layering cases even if those exact words don\'t appear in the query.',
     persona: '🤖 ChromaDB receives query: "circular transfer layering mule account hawala". Returns top-3 nearest historical cases by cosine similarity: CASE-001 (circular flow, 0.94 similarity), CASE-005 (mule network, 0.88), and a 2024 hawala case (0.81).',
     expectedDecision: 'approve',
     apiEndpoint: 'POST /api/knowledge/search (ChromaDB semantic search)',
@@ -434,7 +434,7 @@ const USE_CASES: UseCase[] = [
   {
     id: 'UC-34', group: 'E',
     title: 'RAG-Powered LLM Explanation Engine',
-    description: 'Chakravyuh\'s explanation layer uses Retrieval-Augmented Generation (RAG): ChromaDB retrieves the most relevant fraud knowledge (policies, historical cases, RBI guidelines) and passes it as grounded context for the briefing. The /explain endpoint for ALT-001 retrieves circular transfer policy context, layering typology documentation, and PMLA Section 3 guidance — then generates an expert-quality analyst briefing backed by PostgreSQL data.',
+    description: 'Virgil\'s explanation layer uses Retrieval-Augmented Generation (RAG): ChromaDB retrieves the most relevant fraud knowledge (policies, historical cases, RBI guidelines) and passes it as grounded context for the briefing. The /explain endpoint for ALT-001 retrieves circular transfer policy context, layering typology documentation, and PMLA Section 3 guidance — then generates an expert-quality analyst briefing backed by PostgreSQL data.',
     persona: '🤖 RAG + ChromaDB: ALT-001 context retrieved → circular transfer policy + PMLA Section 3 guidance → generates: "The 3-hop RTGS cycle with 2.97% extraction spread meets the FIU-IND definition of layering under PMLA 2002..."',
     expectedDecision: 'approve',
     apiEndpoint: 'GET /api/alerts/ALT-GEN-001/explain (RAG → ChromaDB)',

@@ -261,7 +261,7 @@ export default function ReportPage() {
 
         <Separator />
         <p className="text-xs text-muted-foreground text-center">
-          Chakravyuh Fraud Intelligence Platform · Confidential — Restricted to Authorised Personnel Only ·{' '}
+          Virgil Fraud Intelligence Platform · Confidential — Restricted to Authorised Personnel Only ·{' '}
           {new Date().toLocaleDateString('en-IN')}
         </p>
       </div>

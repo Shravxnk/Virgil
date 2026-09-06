@@ -44,7 +44,7 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
               letterSpacing: '0.08em',
             }}
           >
-            CHAKRAVYUH
+            VIRGIL
           </span>
           <span
             style={{
