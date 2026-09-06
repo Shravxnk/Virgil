@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.responses import JSONResponse  # noqa: E402
 
-from app.api.routes import alerts, cases, compliance, dashboard, feedback, graph, risk, scenarios, transactions  # noqa: E402
+from app.api.routes import alerts, cases, compliance, dashboard, feedback, graph, reports, risk, scenarios, transactions  # noqa: E402
 from app.api.routes import accounts as accounts_router  # noqa: E402
 from app.api.routes import events as events_router  # noqa: E402
 from app.api.routes import admin as admin_router  # noqa: E402
@@ -231,6 +231,7 @@ app.include_router(risk.router, prefix="/api")
 app.include_router(alerts.router, prefix="/api")
 app.include_router(cases.router, prefix="/api")
 app.include_router(graph.router, prefix="/api")
+app.include_router(reports.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(feedback.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")
