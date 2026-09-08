@@ -331,6 +331,11 @@ export default function PreTxnAnalyticsPage() {
                         <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, fontWeight: 600, color: dcfg.color, background: dcfg.bg, border: `1px solid ${dcfg.border}`, borderRadius: 3, padding: '2px 7px', flexShrink: 0 }}>
                           {dcfg.label}
                         </span>
+                        {item.completed && (
+                          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, fontWeight: 600, color: 'var(--risk-low)', background: 'rgba(22,163,74,0.12)', border: '1px solid rgba(22,163,74,0.30)', borderRadius: 3, padding: '2px 7px', flexShrink: 0 }}>
+                            ✓ COMPLETED
+                          </span>
+                        )}
                         <div style={{ position: 'relative', width: 24, height: 24, flexShrink: 0 }}>
                           <RiskRing score={item.risk_score} size={24} />
                         </div>

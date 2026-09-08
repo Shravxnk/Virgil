@@ -2,14 +2,16 @@
 
 import asyncio
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
+from app.core.data_loader import get_devices_for_account, get_profile_by_account
 from app.db import connection
 from app.db.repositories.transaction_repo import (
+    complete_pre_txn,
     count_transactions,
     find_transactions,
     get_manual_review_queue,
@@ -19,9 +21,30 @@ from app.db.repositories.transaction_repo import (
     submit_pre_txn,
 )
 from app.llm.explainer import generate_alert_explanation, generate_manual_review_suggestion
-from app.services.risk_scoring import score_transaction_params
+from app.services.risk_scoring import _device_signals, _profile_baseline_avg, score_transaction_params
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
+
+
+def _device_evidence(req: "PreTxnRequest") -> dict:
+    """Build the case's device-analysis section from the account's real
+    registered devices, not the client-supplied device_known flag — mirrors
+    _device_signals() so the evidence package agrees with what actually
+    drove the score instead of whatever the caller claimed."""
+    known_device, _trust, ip_risk = _device_signals(req.from_account)
+    devices = get_devices_for_account(req.from_account)
+    latest = max(devices, key=lambda d: d["last_seen"]) if devices else None
+    return {
+        "known_device": known_device,
+        "device_id": req.device_id or (latest["id"] if latest else "unknown"),
+        "device_type": (latest["device_type"] if latest else ("Mobile" if req.channel == "mobile" else "Desktop")),
+        "os": latest["os"] if latest else "Unknown",
+        "ip_address": req.ip_address or (latest["ip_address"] if latest else ""),
+        "ip_risk": ip_risk,
+        "geo_location": req.geo_location or (latest["geo_location"] if latest else ""),
+    }
 
 
 def _fast_suggestion(item: dict) -> dict:
@@ -181,24 +204,16 @@ async def _auto_generate_alert_and_case(
             "primary_account": req.from_account,
             "evidence": {
                 "behavioral_analysis": {
-                    "baseline_avg_amount": 0,
+                    "baseline_avg_amount": _profile_baseline_avg(get_profile_by_account(req.from_account) or {}),
                     "current_amount": int(req.amount),
                     "deviation": float(result.get("amount_anomaly", 0)),
                     "usual_time_range": "09:00-21:00 IST",
-                    "transaction_time": datetime.now(timezone.utc).strftime("%H:%M IST"),
+                    "transaction_time": datetime.now(IST).strftime("%H:%M IST"),
                     "time_anomaly": bool(result.get("time_anomaly", 0) > 30),
                     "usual_locations": [],
                     "transaction_location": req.geo_location or "",
                 },
-                "device_analysis": {
-                    "known_device": req.device_known,
-                    "device_id": req.device_id or "unknown",
-                    "device_type": "Mobile" if req.channel == "mobile" else "Desktop",
-                    "os": "Unknown",
-                    "ip_address": req.ip_address or "",
-                    "ip_risk": "high" if req.ip_address and req.ip_address.startswith("185.") else "low",
-                    "geo_location": req.geo_location or "",
-                },
+                "device_analysis": _device_evidence(req),
                 "network_analysis": {
                     "circular_transfers": bool(result.get("graph_risk", 0) > 50),
                     "hop_count": 1,
@@ -288,6 +303,12 @@ async def score_pre_transaction(req: PreTxnRequest):
 
     scored_at = datetime.now(timezone.utc).isoformat()
 
+    # An APPROVE decision executes instantly — there's no further step (MFA
+    # waits on the biometric/OTP flow, manual_review waits on the analyst),
+    # so mark it completed right away instead of leaving it "pending" forever.
+    if result["decision"] == "approve":
+        await complete_pre_txn(pre_id)
+
     # Auto-generate alert + case for high-risk decisions (score ≥ 50)
     alert_id, case_id = None, None
     try:
@@ -342,7 +363,20 @@ async def score_pre_transaction(req: PreTxnRequest):
         "alert_id": alert_id,
         "case_id": case_id,
         "scored_at": scored_at,
+        "completed": result["decision"] == "approve",
     }
+
+
+@router.post("/{pre_id}/complete")
+async def complete_transaction(pre_id: str):
+    """Mark a pre-transaction as completed. Called by the frontend once an
+    MFA (biometric/OTP) step-up succeeds — approve is auto-completed above,
+    manual_review completes via the /decide endpoint."""
+    item = await get_pre_txn(pre_id)
+    if not item:
+        raise HTTPException(status_code=404, detail=f"Transaction {pre_id} not found")
+    await complete_pre_txn(pre_id)
+    return {"pre_txn_id": pre_id, "completed": True}
 
 
 @router.get("/score/{pre_id}/explain")

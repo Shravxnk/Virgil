@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Bell, User, ChevronRight } from 'lucide-react';
+import { api, SSE_URL } from '@/lib/api';
 
 interface HeaderProps {
   title: string;
@@ -50,6 +52,63 @@ function LiveClock() {
   );
 }
 
+function NotificationBell() {
+  const router = useRouter();
+  const [count, setCount] = useState(0);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getAlerts({ status: 'investigating', limit: 1 })
+      .then(res => { if (!cancelled) setCount(res.total ?? 0); })
+      .catch(() => { /* badge just stays at 0 if this fails */ });
+
+    const es = new EventSource(SSE_URL);
+    es.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'transaction_scored' && msg.alert_id) {
+          setCount(c => c + 1);
+          setToast(`New alert: ${msg.decision?.toUpperCase()} — ${msg.from_name || msg.from_account} → ${msg.to_name || msg.to_account}`);
+          window.setTimeout(() => setToast(null), 5000);
+        }
+      } catch { /* ignore malformed events */ }
+    };
+    return () => { cancelled = true; es.close(); };
+  }, []);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => router.push('/analyst/alerts')}
+        className="relative h-8 w-8 rounded-md flex items-center justify-center transition-colors"
+        style={{ color: '#64748B', border: '1px solid #E2E8F0', background: '#FFFFFF', cursor: 'pointer' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#F8FAFC'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FFFFFF'; }}
+        title="Go to Alert Inbox"
+      >
+        <Bell className="h-4 w-4" />
+        {count > 0 && (
+          <span
+            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white"
+            style={{ backgroundColor: '#DC2626' }}
+          >
+            {count > 9 ? '9+' : count}
+          </span>
+        )}
+      </button>
+      {toast && (
+        <div
+          className="absolute right-0 top-10 z-50 rounded-md shadow-lg"
+          style={{ width: 260, background: '#0F172A', color: '#F8FAFC', padding: '10px 12px', fontSize: 11, lineHeight: 1.4 }}
+        >
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Header({ title, subtitle, breadcrumb }: HeaderProps) {
   return (
     <header
@@ -83,20 +142,7 @@ export function Header({ title, subtitle, breadcrumb }: HeaderProps) {
         <LiveClock />
 
         {/* Notification bell */}
-        <button
-          className="relative h-8 w-8 rounded-md flex items-center justify-center transition-colors"
-          style={{ color: '#64748B', border: '1px solid #E2E8F0', background: '#FFFFFF' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#F8FAFC'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FFFFFF'; }}
-        >
-          <Bell className="h-4 w-4" />
-          <span
-            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white"
-            style={{ backgroundColor: '#DC2626' }}
-          >
-            3
-          </span>
-        </button>
+        <NotificationBell />
 
         {/* User avatar */}
         <div className="flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors"

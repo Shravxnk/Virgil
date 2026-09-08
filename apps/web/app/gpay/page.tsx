@@ -190,6 +190,12 @@ export default function GPayPage() {
 
   const reset = () => { setResult(null); setAmount(''); setStep('form'); setError(''); };
 
+  const completeTxn = useCallback((preId: string) => {
+    fetch(`${API_BASE}/api/transactions/${preId}/complete`, { method: 'POST' }).catch(() => {
+      // Best-effort — the result screen already reflects success either way.
+    });
+  }, []);
+
   // ── RESULT SCREEN ──────────────────────────────────────────────────────
   if (step === 'result' && result) {
     const configs = {
@@ -276,6 +282,7 @@ export default function GPayPage() {
                     setBiometricLoading(true);
                     await new Promise(r => setTimeout(r, 2000));
                     setBiometricStep('success');
+                    completeTxn(result.pre_txn_id);
                   }} style={{
                     width: '100%', maxWidth: 320, height: 54, borderRadius: 27,
                     background: '#1A73E8', border: 'none', color: '#fff',
@@ -313,6 +320,7 @@ export default function GPayPage() {
                     setBiometricLoading(true);
                     await new Promise(r => setTimeout(r, 2500));
                     setBiometricStep('success');
+                    completeTxn(result.pre_txn_id);
                   }} style={{
                     width: '100%', maxWidth: 320, height: 54, borderRadius: 27,
                     background: '#EA4335', border: 'none', color: '#fff',
@@ -410,9 +418,20 @@ export default function GPayPage() {
             📱 {deviceName}{geoLoc ? ` · 📍 ${geoLoc}` : ''}
           </div>
 
-          <button onClick={reset} style={{ width: '100%', height: 52, borderRadius: 26, background: '#1A73E8', border: 'none', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.01em' }}>
-            New Payment
-          </button>
+          {result.decision === 'mfa' ? (
+            <>
+              <button onClick={() => setBiometricStep('prompt')} style={{ width: '100%', height: 52, borderRadius: 26, background: '#1A73E8', border: 'none', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.01em', marginBottom: 10 }}>
+                Verify Identity
+              </button>
+              <button onClick={reset} style={{ width: '100%', height: 44, borderRadius: 22, background: 'transparent', border: '1px solid #DADCE0', color: '#5F6368', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                Cancel Payment
+              </button>
+            </>
+          ) : (
+            <button onClick={reset} style={{ width: '100%', height: 52, borderRadius: 26, background: '#1A73E8', border: 'none', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.01em' }}>
+              New Payment
+            </button>
+          )}
         </div>
 
         <style>{`@keyframes pop{0%{transform:scale(0.5);opacity:0}100%{transform:scale(1);opacity:1}}`}</style>

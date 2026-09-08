@@ -100,7 +100,7 @@ export default function ManualReviewPage() {
     setLoading(true);
     try {
       const data = await api.getManualReviewQueue();
-      const arr = Array.isArray(data) ? data : (data as { items: ManualReviewItem[] }).items ?? [];
+      const arr = Array.isArray(data) ? data : (data as { manual_review: ManualReviewItem[] }).manual_review ?? [];
       setItems(arr as ManualReviewItem[]);
       setLastRefresh(new Date());
     } catch {
@@ -120,8 +120,19 @@ export default function ManualReviewPage() {
     });
   };
 
-  const handleAction = (id: string, action: 'approved' | 'rejected') => {
+  const handleAction = async (id: string, action: 'approved' | 'rejected') => {
     setActioned(prev => ({ ...prev, [id]: action }));
+    try {
+      await api.decideManualReview(id, action);
+    } catch {
+      // Revert the optimistic update if the backend call failed, so the
+      // item reappears in the queue instead of silently vanishing unresolved.
+      setActioned(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
   };
 
   const pending = items.filter(i => !actioned[i.id]);
