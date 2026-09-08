@@ -133,9 +133,6 @@ export const api = {
       body: JSON.stringify({ decision, note: note ?? '' }),
     }),
 
-  completeTransaction: (id: string) =>
-    fetchAPI(`/api/transactions/${encodeURIComponent(id)}/complete`, { method: 'POST' }),
-
   // Compliance — STR/CTR Reports
   getComplianceReports: () =>
     fetchAPI<{
