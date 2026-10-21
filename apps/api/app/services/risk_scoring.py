@@ -78,15 +78,23 @@ def _check_graph_signals(account_id: str, transactions: list[dict]) -> dict:
         else:
             counterparties.add(t["from_account"])
 
-    # Check for circular patterns (simplified)
+    # Circular pattern: money sent out by this account eventually flows back
+    # to it. Follow outgoing edges only — a plain inbound payment is not a
+    # cycle, even though the payer trivially "sends to" this account.
+    outgoing: dict[str, set[str]] = {}
+    for t in transactions:
+        outgoing.setdefault(t["from_account"], set()).add(t["to_account"])
+
     circular = False
-    for cp in counterparties:
-        cp_targets = {
-            t["to_account"] for t in transactions
-            if t["from_account"] == cp
-        }
-        if account_id in cp_targets:
+    frontier = set(outgoing.get(account_id, set()))
+    seen = set(frontier)
+    for _ in range(6):  # max ring length considered
+        if account_id in frontier:
             circular = True
+            break
+        frontier = {n for node in frontier for n in outgoing.get(node, set())} - seen
+        seen |= frontier
+        if not frontier:
             break
 
     hop_count = len(counterparties)

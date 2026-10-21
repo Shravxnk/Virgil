@@ -97,3 +97,24 @@ class TestFullScoring:
         )
         assert result["decision"] == "block"
         assert result["score"] >= 80
+
+
+class TestGraphSignals:
+    @staticmethod
+    def _txn(src, dst):
+        return {"from_account": src, "to_account": dst}
+
+    def test_inbound_only_is_not_circular(self):
+        from app.services.risk_scoring import _check_graph_signals
+        txns = [self._txn("A", "B")]
+        assert _check_graph_signals("B", txns)["circular_transfers"] is False
+
+    def test_ring_is_circular(self):
+        from app.services.risk_scoring import _check_graph_signals
+        txns = [self._txn("A", "B"), self._txn("B", "C"), self._txn("C", "A")]
+        assert all(_check_graph_signals(a, txns)["circular_transfers"] for a in "ABC")
+
+    def test_open_chain_is_not_circular(self):
+        from app.services.risk_scoring import _check_graph_signals
+        txns = [self._txn("A", "B"), self._txn("B", "C"), self._txn("C", "D")]
+        assert not any(_check_graph_signals(a, txns)["circular_transfers"] for a in "ABCD")

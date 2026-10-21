@@ -346,6 +346,11 @@
     "account_type": "vpa_only",
     "kyc_tier": "I1",
     "risk_rating": "high",
+    "flags": [
+      "prior_investigation",
+      "shell_company_indicators",
+      "high_risk_jurisdiction"
+    ],
     "monthly_avg_credit": 0,
     "monthly_avg_debit": 0,
     "typical_hours_start": 0,
@@ -400,6 +405,9 @@
     "account_type": "individual_savings",
     "kyc_tier": "I1",
     "risk_rating": "high",
+    "flags": [
+      "pep_connected"
+    ],
     "monthly_avg_credit": 0,
     "monthly_avg_debit": 0,
     "typical_hours_start": 9,
@@ -454,6 +462,10 @@
     "account_type": "individual_savings",
     "kyc_tier": "I1",
     "risk_rating": "high",
+    "flags": [
+      "prior_investigation",
+      "shell_company_indicators"
+    ],
     "monthly_avg_credit": 0,
     "monthly_avg_debit": 0,
     "typical_hours_start": 9,

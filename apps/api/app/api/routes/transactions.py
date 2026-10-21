@@ -2,7 +2,7 @@
 
 import asyncio
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -268,7 +268,8 @@ async def score_pre_transaction(req: PreTxnRequest):
         from_account=req.from_account,
         to_account=req.to_account,
         amount=req.amount,
-        txn_hour=datetime.now(timezone.utc).hour,
+        # Profile usual hours are IST, so score against the IST hour
+        txn_hour=datetime.now(timezone(timedelta(hours=5, minutes=30))).hour,
         currency=req.currency,
     )
 

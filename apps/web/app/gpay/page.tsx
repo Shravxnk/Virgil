@@ -84,7 +84,7 @@ async function getGeoLocation(): Promise<string> {
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve(`${pos.coords.latitude.toFixed(4)},${pos.coords.longitude.toFixed(4)}`),
       () => resolve(''),
-      { timeout: 8000 },
+      { timeout: 8000, maximumAge: 300000 },
     );
   });
 }
@@ -157,6 +157,9 @@ export default function GPayPage() {
     return loc;
   }, []);
 
+  // Warm up geolocation in the background so it's ready by the time they pay
+  useEffect(() => { requestGeo(); }, [requestGeo]);
+
   const fromAccount = accounts.find(a => a.id === fromId);
   const toAccount = accounts.find(a => a.id === toId);
 
@@ -164,7 +167,11 @@ export default function GPayPage() {
     if (!fromId || !toId || !amount || fromId === toId) return;
     setLoading(true); setError('');
     try {
-      const loc = geoLoc || await requestGeo();
+      // Don't hold the payment hostage to a slow or unanswered location prompt
+      const loc = geoLoc || await Promise.race([
+        requestGeo(),
+        new Promise<string>(r => setTimeout(() => r(''), 1500)),
+      ]);
       const res = await fetch(`${API_BASE}/api/transactions/score`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

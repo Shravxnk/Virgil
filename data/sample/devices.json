@@ -250,5 +250,19 @@
     "first_seen": "2021-10-02",
     "last_seen": "2026-03-30",
     "trust_score": 68
+  },
+  {
+    "id": "DEV-0131",
+    "account_id": "ACC-003",
+    "device_type": "Mobile",
+    "os": "Android 10",
+    "browser": "Chrome Mobile 110",
+    "fingerprint": "fp_ato_0131_unseen",
+    "ip_address": "185.220.101.47",
+    "isp": "Unknown VPN / Tor exit",
+    "geo_location": "Unknown",
+    "first_seen": "2026-04-02",
+    "last_seen": "2026-04-02",
+    "trust_score": 9
   }
 ]
