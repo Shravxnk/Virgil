@@ -151,23 +151,26 @@ async def _seed_pg_sample_data() -> None:
 async def lifespan(app: FastAPI):
     """Startup: initialise MongoDB connection and seed vector collections."""
     settings = get_settings()
-    # ① Always seed runtime store (works even without PostgreSQL)
-    try:
-        from app.core.data_generator import generate_seed_data
-        from app.db.repositories.runtime_store import store_alert, store_case, store_transaction
-        _seed = generate_seed_data()
-        for _a in _seed["alerts"]:
-            store_alert(_a)
-        for _c in _seed["cases"]:
-            store_case(_c)
-        for _t in _seed["transactions"]:
-            store_transaction(_t)
-        # Profiles/devices are intentionally NOT seeded from the generator here —
-        # see the note in runtime_store._auto_seed for why (keeps the account
-        # dropdown and the scoring engine looking at the same account data).
-        print(f"[Virgil] Runtime store seeded: {len(_seed['alerts'])} alerts, {len(_seed['cases'])} cases, {len(_seed['transactions'])} txns.")
-    except Exception as _e:
-        print(f"[Virgil] Runtime store seeding failed: {_e}")
+    # ① Seed runtime store (works even without PostgreSQL)
+    if not settings.seed_demo_data:
+        print("[Virgil] Demo data seeding disabled (SEED_DEMO_DATA=false) — starting empty.")
+    else:
+        try:
+            from app.core.data_generator import generate_seed_data
+            from app.db.repositories.runtime_store import store_alert, store_case, store_transaction
+            _seed = generate_seed_data()
+            for _a in _seed["alerts"]:
+                store_alert(_a)
+            for _c in _seed["cases"]:
+                store_case(_c)
+            for _t in _seed["transactions"]:
+                store_transaction(_t)
+            # Profiles/devices are intentionally NOT seeded from the generator here —
+            # see the note in runtime_store._auto_seed for why (keeps the account
+            # dropdown and the scoring engine looking at the same account data).
+            print(f"[Virgil] Runtime store seeded: {len(_seed['alerts'])} alerts, {len(_seed['cases'])} cases, {len(_seed['transactions'])} txns.")
+        except Exception as _e:
+            print(f"[Virgil] Runtime store seeding failed: {_e}")
     # ② PostgreSQL (optional — failures do not affect runtime store)
     try:
         from app.db.connection import init_db
@@ -176,7 +179,8 @@ async def lifespan(app: FastAPI):
             settings.db_user, settings.db_password,
             database_url=settings.database_url,
         )
-        await _seed_pg_sample_data()
+        if settings.seed_demo_data:
+            await _seed_pg_sample_data()
     except Exception as e:
         print(f"[Virgil] PostgreSQL init skipped: {e}")
     # Clear JSON cache so data files are always read fresh after startup

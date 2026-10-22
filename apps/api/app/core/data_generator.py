@@ -380,7 +380,7 @@ def generate_cases() -> list[dict]:
             "created_at": _ts(8, 10), "updated_at": _ts(6, 9),
             "total_exposure": 18500000, "alert_count": 2,
             "description": (
-                "Meridian Holdings India Pvt Ltd (ACC-001) initiated ₹4.2Cr RTGS to Offshore "
+                "Meridian Holdings India Pvt Ltd (ACC-001) initiated ₹42L RTGS to Offshore "
                 "Holdings Ltd at 02:15 AM, funds onward to Shell Corp Alpha within 90 minutes. "
                 "Third RTGS ₹98L same day. Total ₹1.85Cr exposure. Circular pattern detected."
             ),

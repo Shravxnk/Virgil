@@ -1,13 +1,18 @@
 """PDF report generator for FIU-style investigation reports."""
 
 import io
+import os
+import re
 import uuid
 from datetime import datetime
+from xml.sax.saxutils import escape
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
     HRFlowable,
     Paragraph,
@@ -19,6 +24,47 @@ from reportlab.platypus import (
 
 from app.llm.explainer import generate_report_narrative
 from app.utils import compute_custody_hash
+
+# ReportLab's built-in Helvetica has no ₹ glyph (it renders as a black box), so
+# use a system TTF that has one. Fonts can't be bundled (licensing), hence the
+# search; if none is found, ₹ is written as "Rs." instead.
+_FONT_CANDIDATES = [
+    (r"C:\Windows\Fonts\arial.ttf", r"C:\Windows\Fonts\arialbd.ttf"),
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+    ("/usr/share/fonts/dejavu/DejaVuSans.ttf", "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"),
+    ("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf", "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf"),
+    ("/Library/Fonts/Arial Unicode.ttf", "/Library/Fonts/Arial Unicode.ttf"),
+]
+
+
+def _register_fonts() -> tuple[str, str, str]:
+    """Return (regular font, bold font, rupee text) for the report."""
+    for regular, bold in _FONT_CANDIDATES:
+        if not (os.path.exists(regular) and os.path.exists(bold)):
+            continue
+        try:
+            reg_font = TTFont("ReportSans", regular)
+            if 0x20B9 not in reg_font.face.charToGlyph:
+                continue
+            pdfmetrics.registerFont(reg_font)
+            pdfmetrics.registerFont(TTFont("ReportSans-Bold", bold))
+            pdfmetrics.registerFontFamily("ReportSans", normal="ReportSans", bold="ReportSans-Bold",
+                               italic="ReportSans", boldItalic="ReportSans-Bold")
+            return "ReportSans", "ReportSans-Bold", "₹"
+        except Exception:
+            continue
+    return "Helvetica", "Helvetica-Bold", "Rs."
+
+
+_FONT, _FONT_BOLD, _RUPEE = _register_fonts()
+
+
+def _rupee(text: str) -> str:
+    return text if _RUPEE == "₹" else text.replace("₹", "Rs.")
+
+
+def _para(text: str, style: ParagraphStyle) -> Paragraph:
+    return Paragraph(_rupee(text), style)
 
 
 def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
@@ -78,12 +124,17 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
         spaceAfter=12,
     ))
 
+    for style in styles.byName.values():
+        if not isinstance(style, ParagraphStyle):
+            continue
+        style.fontName = _FONT_BOLD if "Bold" in style.fontName else _FONT
+
     story = []
 
     # Header
-    story.append(Paragraph("CONFIDENTIAL — FOR AUTHORIZED USE ONLY", styles["Confidential"]))
-    story.append(Paragraph("VIRGIL — Financial Intelligence Unit", styles["ReportTitle"]))
-    story.append(Paragraph("Investigation Report", styles["Heading3"]))
+    story.append(_para("CONFIDENTIAL — FOR AUTHORIZED USE ONLY", styles["Confidential"]))
+    story.append(_para("VIRGIL — Financial Intelligence Unit", styles["ReportTitle"]))
+    story.append(_para("Investigation Report", styles["Heading3"]))
     story.append(Spacer(1, 4))
 
     meta_data = [
@@ -93,9 +144,10 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
     ]
     meta_table = Table(meta_data, colWidths=[1.2 * inch, 2.0 * inch, 1.2 * inch, 2.0 * inch])
     meta_table.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), _FONT),
         ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-        ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
+        ("FONTNAME", (0, 0), (0, -1), _FONT_BOLD),
+        ("FONTNAME", (2, 0), (2, -1), _FONT_BOLD),
         ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#333333")),
         ("TEXTCOLOR", (2, 0), (2, -1), colors.HexColor("#333333")),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
@@ -105,12 +157,12 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cccccc")))
 
     # 1. Executive Summary
-    story.append(Paragraph("1. Executive Summary", styles["SectionHead"]))
-    story.append(Paragraph(case_data.get("description", "No description available."), styles["BodyText2"]))
+    story.append(_para("1. Executive Summary", styles["SectionHead"]))
+    story.append(_para(case_data.get("description", "No description available."), styles["BodyText2"]))
 
     # 2. Subject Information
-    story.append(Paragraph("2. Subject Information", styles["SectionHead"]))
-    story.append(Paragraph(
+    story.append(_para("2. Subject Information", styles["SectionHead"]))
+    story.append(_para(
         f"<b>Primary Account:</b> {case_data.get('primary_account', 'N/A')}<br/>"
         f"<b>Title:</b> {case_data.get('title', 'N/A')}<br/>"
         f"<b>Total Exposure:</b> \u20b9{case_data.get('total_exposure', 0):,.0f}<br/>"
@@ -119,7 +171,7 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
     ))
 
     # 3. Suspicious Activity Narrative (AI-generated)
-    story.append(Paragraph("3. Suspicious Activity Description", styles["SectionHead"]))
+    story.append(_para("3. Suspicious Activity Description", styles["SectionHead"]))
     evidence_summary = _format_evidence_text(case_data.get("evidence", {}))
     # Build enriched context for AI: include all transaction details
     txn_ids = case_data.get("transaction_ids", [])
@@ -139,23 +191,23 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
         if txn_lines:
             txn_context += "\n\nLinked Transactions:\n" + "\n".join(txn_lines)
     narrative = generate_report_narrative(case_data, txn_context)
-    story.append(Paragraph(narrative.replace("\n\n", "<br/><br/>").replace("\n", "<br/>"), styles["BodyText2"]))
+    story.append(_para(_narrative_to_markup(narrative), styles["BodyText2"]))
 
     # 4. Transaction Details
-    story.append(Paragraph("4. Transaction Details", styles["SectionHead"]))
+    story.append(_para("4. Transaction Details", styles["SectionHead"]))
     txn_ids = case_data.get("transaction_ids", [])
     if txn_ids:
         from app.db.repositories.runtime_store import list_transactions
         all_txns = list_transactions()
         case_txns = [t for t in all_txns if t["id"] in txn_ids]
 
-        txn_table_data = [["ID", "From Account", "To Account", "Amount (₹)", "Date", "Type", "Channel"]]
+        txn_table_data = [["ID", "From Account", "To Account", _rupee("Amount (₹)"), "Date", "Type", "Channel"]]
         for t in case_txns:
             txn_table_data.append([
                 t["id"],
                 t["from_account"],
                 t["to_account"],
-                f"₹{t['amount']:,.0f}",
+                _rupee(f"₹{t['amount']:,.0f}"),
                 t["timestamp"][:10],
                 t.get("type", t.get("txn_type", "N/A")),
                 t.get("channel", "N/A"),
@@ -166,8 +218,9 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
         txn_table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a1a2e")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ("FONTNAME", (0, 0), (-1, -1), _FONT),
+            ("FONTNAME", (0, 0), (-1, 0), _FONT_BOLD),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
             ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#dddddd")),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8f9fa")]),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
@@ -175,41 +228,41 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
         ]))
         story.append(txn_table)
     else:
-        story.append(Paragraph("No transactions associated with this case.", styles["BodyText2"]))
+        story.append(_para("No transactions associated with this case.", styles["BodyText2"]))
 
     # 5. Evidence and Indicators
-    story.append(Paragraph("5. Evidence and Risk Indicators", styles["SectionHead"]))
-    story.append(Paragraph(evidence_summary, styles["BodyText2"]))
+    story.append(_para("5. Evidence and Risk Indicators", styles["SectionHead"]))
+    story.append(_para(evidence_summary, styles["BodyText2"]))
 
     # 6. Timeline
-    story.append(Paragraph("6. Timeline of Events", styles["SectionHead"]))
+    story.append(_para("6. Timeline of Events", styles["SectionHead"]))
     timeline = case_data.get("timeline", [])
     for event in timeline[:10]:
-        story.append(Paragraph(
+        story.append(_para(
             f"<b>{event['timestamp'][:16]}</b> — [{event['event_type']}] {event['description']}",
             styles["BodyText2"],
         ))
 
     # 7. Similar Cases
-    story.append(Paragraph("7. Similar Historical Cases", styles["SectionHead"]))
+    story.append(_para("7. Similar Historical Cases", styles["SectionHead"]))
     similar = case_data.get("similar_cases", [])
     if similar:
         for sc in similar:
-            story.append(Paragraph(
+            story.append(_para(
                 f"• <b>{sc['id']}</b>: {sc['title']} — Similarity: {sc['similarity']:.0%}, "
                 f"Outcome: {sc['outcome']}, Risk: {sc['risk_score']}/100",
                 styles["BodyText2"],
             ))
     else:
-        story.append(Paragraph("No similar historical cases identified.", styles["BodyText2"]))
+        story.append(_para("No similar historical cases identified.", styles["BodyText2"]))
 
     # Footer
     story.append(Spacer(1, 24))
     story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cccccc")))
     story.append(Spacer(1, 8))
-    story.append(Paragraph(f"Chain-of-Custody Hash: {custody_hash}", styles["SmallGray"]))
-    story.append(Paragraph(f"Generated by Virgil Fraud Intelligence System — {generated_at}", styles["SmallGray"]))
-    story.append(Paragraph("CLASSIFICATION: CONFIDENTIAL", styles["Confidential"]))
+    story.append(_para(f"Chain-of-Custody Hash: {custody_hash}", styles["SmallGray"]))
+    story.append(_para(f"Generated by Virgil Fraud Intelligence System — {generated_at}", styles["SmallGray"]))
+    story.append(_para("CLASSIFICATION: CONFIDENTIAL", styles["Confidential"]))
 
     doc.build(story)
     pdf_bytes = buffer.getvalue()
@@ -224,6 +277,28 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
     }
 
     return pdf_bytes, metadata
+
+
+def _narrative_to_markup(text: str) -> str:
+    """Turn LLM narrative text into safe ReportLab paragraph markup.
+
+    LLMs sometimes reply in Markdown/HTML despite instructions; raw `<br>` or
+    stray `<`/`&` makes ReportLab's parser throw, so escape everything first
+    and only re-introduce the tags we generate ourselves.
+    """
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+    lines = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if re.fullmatch(r"[-|:\s]{3,}", stripped):  # Markdown rules / table separators
+            continue
+        heading = re.match(r"#{1,6}\s*(.*)", stripped)
+        line = escape(heading.group(1) if heading else line)
+        line = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", line)
+        if heading:
+            line = f"<b>{line}</b>"
+        lines.append(line)
+    return "<br/>".join(lines)
 
 
 def _format_evidence_text(evidence: dict) -> str:

@@ -13,6 +13,16 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o"
 
+    # Groq — when GROQ_API_KEY is set it takes priority over xAI and OpenAI
+    groq_api_key: str = ""
+    groq_model: str = "openai/gpt-oss-120b"
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+
+    # xAI Grok — when XAI_API_KEY is set it is used instead of OpenAI
+    xai_api_key: str = ""
+    xai_model: str = "grok-4"
+    xai_base_url: str = "https://api.x.ai/v1"
+
     # PostgreSQL — either set DATABASE_URL (takes priority) or individual DB_* vars
     database_url: str = ""  # e.g. postgresql://user:pass@host/dbname
     db_host: str = "localhost"
@@ -25,6 +35,9 @@ class Settings(BaseSettings):
     api_host: str = "127.0.0.1"
     api_port: int = 8000
     frontend_url: str = "http://localhost:3000"
+
+    # Set SEED_DEMO_DATA=false to start with an empty dashboard (no demo alerts/cases/txns)
+    seed_demo_data: bool = True
 
     data_dir: str = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "..", "data"))
 

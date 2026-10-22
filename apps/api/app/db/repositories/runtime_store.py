@@ -123,6 +123,9 @@ def _auto_seed() -> None:
     # account even is. Leaving these two empty means both consistently read
     # from the same static JSON files.
     try:
+        from app.config import get_settings
+        if not get_settings().seed_demo_data:
+            return
         from app.core.data_generator import generate_seed_data
         _seed = generate_seed_data()
         for _a in _seed["alerts"]:

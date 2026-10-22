@@ -72,7 +72,17 @@ State the fraud type suspected (e.g. Money Laundering, Account Takeover, Mule Ne
 Describe actions already taken (account freeze, MFA challenge, escalation to LE) and recommended further actions.
 
 Use formal RBI/FIU-IND report language. Reference the PMLA 2002 and RBI Master Circular on KYC/AML where appropriate.
-Be precise about amounts (₹), dates, transaction IDs, and account IDs."""
+Be precise about amounts (₹), dates, transaction IDs, and account IDs.
+
+STRICT RULES:
+- Use ONLY facts given in the request. Never invent names, PAN/CIN numbers, addresses, officers, emails,
+  phone numbers, IP addresses, jurisdictions, watch-list hits, documents, or scores.
+- Where a detail is not in the request, write "Not available in case record".
+- Report the risk score exactly as given; do not compute or restate a different one.
+- Copy every amount exactly as written in the request (e.g. ₹4,200,000). Do not convert to lakh/crore
+  or millions, and do not do arithmetic on amounts.
+- Output plain text only: put each section heading on its own line, use "- " for list items.
+  No Markdown (no **, ##, tables), no HTML tags."""
 
 QA_SYSTEM = """You are a fraud intelligence knowledge assistant at an Indian bank's FIU.
 Answer questions using the provided context from the bank's fraud knowledge base, policy playbook, and historical case data.
