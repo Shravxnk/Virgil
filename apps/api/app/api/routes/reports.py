@@ -26,7 +26,8 @@ async def download_report_pdf(case_id: str):
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'attachment; filename="virgil-report-{case_id}.pdf"',
+            # inline: open in the browser's PDF viewer (still saves with this name)
+            "Content-Disposition": f'inline; filename="virgil-report-{case_id}.pdf"',
             "X-Report-Id": metadata["report_id"],
             "X-Custody-Hash": metadata["custody_hash"],
         },

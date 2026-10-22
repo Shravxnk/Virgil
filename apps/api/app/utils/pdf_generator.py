@@ -123,6 +123,18 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
         alignment=1,
         spaceAfter=12,
     ))
+    styles.add(ParagraphStyle(
+        name="NarrativeLine",
+        parent=styles["BodyText2"],
+        spaceAfter=1,
+    ))
+    styles.add(ParagraphStyle(
+        name="NarrativeHead",
+        parent=styles["BodyText2"],
+        fontName="Helvetica-Bold",
+        spaceBefore=8,
+        spaceAfter=3,
+    ))
 
     for style in styles.byName.values():
         if not isinstance(style, ParagraphStyle):
@@ -191,7 +203,9 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
         if txn_lines:
             txn_context += "\n\nLinked Transactions:\n" + "\n".join(txn_lines)
     narrative = generate_report_narrative(case_data, txn_context)
-    story.append(_para(_narrative_to_markup(narrative), styles["BodyText2"]))
+    # One paragraph per line so the narrative can break cleanly across pages
+    for markup, is_heading in _narrative_to_lines(narrative):
+        story.append(_para(markup, styles["NarrativeHead" if is_heading else "NarrativeLine"]))
 
     # 4. Transaction Details
     story.append(_para("4. Transaction Details", styles["SectionHead"]))
@@ -279,26 +293,27 @@ def generate_report_pdf(case_data: dict) -> tuple[bytes, dict]:
     return pdf_bytes, metadata
 
 
-def _narrative_to_markup(text: str) -> str:
-    """Turn LLM narrative text into safe ReportLab paragraph markup.
+def _narrative_to_lines(text: str) -> list[tuple[str, bool]]:
+    """Turn LLM narrative text into safe ReportLab markup, one entry per line.
 
-    LLMs sometimes reply in Markdown/HTML despite instructions; raw `<br>` or
-    stray `<`/`&` makes ReportLab's parser throw, so escape everything first
-    and only re-introduce the tags we generate ourselves.
+    Returns (markup, is_heading) pairs; blank lines are dropped (styles add the
+    spacing). LLMs sometimes reply in Markdown/HTML despite instructions; raw
+    `<br>` or stray `<`/`&` makes ReportLab's parser throw, so escape
+    everything first and only re-introduce the tags we generate ourselves.
     """
     text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
     lines = []
     for line in text.splitlines():
         stripped = line.strip()
-        if re.fullmatch(r"[-|:\s]{3,}", stripped):  # Markdown rules / table separators
+        if not stripped or re.fullmatch(r"[-|:\s]{3,}", stripped):  # blanks, Markdown rules / table separators
             continue
-        heading = re.match(r"#{1,6}\s*(.*)", stripped)
-        line = escape(heading.group(1) if heading else line)
-        line = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", line)
-        if heading:
-            line = f"<b>{line}</b>"
-        lines.append(line)
-    return "<br/>".join(lines)
+        md_heading = re.match(r"#{1,6}\s*(.*)", stripped)
+        content = md_heading.group(1) if md_heading else stripped
+        is_heading = bool(md_heading) or bool(re.match(r"\**SECTION [A-Z]\b", content))
+        markup = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", escape(content))
+        indent = len(line) - len(line.lstrip())  # keep nested list items visibly indented
+        lines.append(("&nbsp;" * indent + markup, is_heading))
+    return lines
 
 
 def _format_evidence_text(evidence: dict) -> str:
